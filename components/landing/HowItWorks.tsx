@@ -1,26 +1,26 @@
-import { Phone, Calendar, CheckCircle, BarChart } from 'lucide-react';
+import { ClipboardList, Settings, Radio, Calendar } from 'lucide-react';
 
 export default function HowItWorks() {
   const steps = [
     {
-      icon: Phone,
-      title: 'Receive Calls',
-      description: 'Elara answers incoming calls instantly, greeting customers professionally and understanding their needs.',
+      icon: ClipboardList,
+      title: 'Sign Up',
+      description: 'Business signs up using our simple form. Provide your business details, services, and operating hours. Quick and straightforward onboarding process.',
+    },
+    {
+      icon: Settings,
+      title: 'We Install',
+      description: 'Our team handles complete setup and installation. We assign your contact number, configure your AI agent, and integrate with your calendar or CRM. No technical knowledge required.',
+    },
+    {
+      icon: Radio,
+      title: 'Agent Goes Live',
+      description: 'Your AI agent becomes active and ready to handle calls 24/7. Trained with your business details, it answers calls, schedules appointments, and captures leads instantly.',
     },
     {
       icon: Calendar,
-      title: 'Check Availability',
-      description: 'Automatically syncs with your calendar to check real-time availability and suggest optimal time slots.',
-    },
-    {
-      icon: CheckCircle,
-      title: 'Confirm Booking',
-      description: 'Confirms appointments, sends reminders, and handles cancellations or rescheduling requests.',
-    },
-    {
-      icon: BarChart,
-      title: 'Track & Analyze',
-      description: 'Monitor booking trends, customer preferences, and performance metrics through detailed analytics.',
+      title: 'Manage & Integrate',
+      description: 'Use Google Calendar or your CRM to manage bookings, view call transcripts, access calendars, and track all customer interactions.',
     },
   ];
 
@@ -56,9 +56,9 @@ export default function HowItWorks() {
           </div>
         </div>
         
-        {/* Grid Layout: Centered horizontally with auto-margins */}
+        {/* Grid Layout: Single row with 4 columns */}
         <div 
-          className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 xl:gap-12 items-stretch justify-center"
+          className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-stretch justify-center"
           style={{
             marginTop: '72px'
           }}

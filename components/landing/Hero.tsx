@@ -45,22 +45,32 @@ export default function Hero() {
           <h1 className="text-6xl md:text-7xl font-bold mb-10 leading-tight bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
             Let Elara Handle Your Calls
           </h1>
-          <p className="text-2xl md:text-[28px] text-[var(--text-secondary)] mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-2xl md:text-[28px] text-[var(--text-secondary)] mb-16 max-w-3xl mx-auto leading-relaxed">
             AI-powered voice booking platform that manages your appointments, 
             schedules meetings, and handles customer inquiries 24/7
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mt-4">
             <Link
               href="/dashboard"
-              className="px-8 md:px-10 py-[14px] rounded-full text-white text-base md:text-lg font-semibold flex items-center gap-3 hover:scale-[1.03] hover:opacity-90 transition-transform transition-opacity shadow-xl shadow-purple-500/40"
+              className="py-5 md:py-6 rounded-full text-white text-lg md:text-xl font-semibold flex items-center gap-3 hover:scale-[1.03] hover:opacity-90 transition-transform transition-opacity shadow-xl shadow-purple-500/40"
               style={{
-                background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)'
+                background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)',
+                letterSpacing: '-0.05em',
+                paddingLeft: '32px',
+                paddingRight: '32px'
               }}
             >
               Get Started
               <ArrowRight className="w-5 h-5" />
             </Link>
-            <button className="px-8 md:px-10 py-[14px] rounded-full border border-[var(--border)] text-[var(--text-primary)] text-base md:text-lg font-semibold hover:bg-[var(--hover-background)] hover:scale-[1.03] transition-transform transition-colors">
+            <button 
+              className="py-5 md:py-6 rounded-full border border-[var(--border)] text-[var(--text-primary)] text-lg md:text-xl font-semibold hover:bg-[var(--hover-background)] hover:scale-[1.03] transition-transform transition-colors"
+              style={{
+                letterSpacing: '-0.05em',
+                paddingLeft: '32px',
+                paddingRight: '32px'
+              }}
+            >
               Watch Demo
             </button>
           </div>

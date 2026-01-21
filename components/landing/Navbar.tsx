@@ -24,20 +24,17 @@ export default function Navbar() {
           
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
-            <Link href="#about" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              About
-            </Link>
             <Link href="#how-it-works" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               How It Works
             </Link>
-            <Link href="#pricing" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              Pricing
-            </Link>
             <Link
               href="/dashboard"
-              className="px-6 py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
+              className="py-4 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
               style={{
-                background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)'
+                background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)',
+                letterSpacing: '-0.05em',
+                paddingLeft: '24px',
+                paddingRight: '24px'
               }}
             >
               Dashboard
@@ -57,20 +54,17 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-[var(--border)]">
             <div className="flex flex-col gap-4">
-              <Link href="#about" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                About
-              </Link>
               <Link href="#how-it-works" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                 How It Works
               </Link>
-              <Link href="#pricing" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                Pricing
-              </Link>
               <Link
                 href="/dashboard"
-                className="px-6 py-3 rounded-lg text-white font-semibold text-center"
+                className="py-4 rounded-lg text-white font-semibold text-center"
                 style={{
-                  background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)'
+                  background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)',
+                  letterSpacing: '-0.05em',
+                  paddingLeft: '24px',
+                  paddingRight: '24px'
                 }}
               >
                 Dashboard

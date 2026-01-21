@@ -61,12 +61,24 @@ export default function CTA() {
             >
               <Link
                 href="/dashboard"
-                className="px-8 md:px-10 py-[14px] rounded-full bg-white text-[var(--deep-blue)] text-base md:text-lg font-semibold flex items-center justify-center gap-3 hover:bg-gray-100 hover:scale-[1.03] transition-transform transition-colors shadow-xl"
+                className="py-5 md:py-6 rounded-full bg-white text-[var(--deep-blue)] text-lg md:text-xl font-semibold flex items-center justify-center gap-3 hover:bg-gray-100 hover:scale-[1.03] transition-transform transition-colors shadow-xl"
+                style={{
+                  letterSpacing: '-0.05em',
+                  paddingLeft: '32px',
+                  paddingRight: '32px'
+                }}
               >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <button className="px-8 md:px-10 py-[14px] rounded-full bg-white/10 backdrop-blur-sm text-white text-base md:text-lg font-semibold border border-white/20 hover:bg-white/20 hover:scale-[1.03] transition-transform transition-colors">
+              <button 
+                className="py-5 md:py-6 rounded-full bg-white/10 backdrop-blur-sm text-white text-lg md:text-xl font-semibold border border-white/20 hover:bg-white/20 hover:scale-[1.03] transition-transform transition-colors"
+                style={{
+                  letterSpacing: '-0.05em',
+                  paddingLeft: '32px',
+                  paddingRight: '32px'
+                }}
+              >
                 Schedule Demo
               </button>
             </div>

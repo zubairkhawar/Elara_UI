@@ -44,7 +44,7 @@ export default function About() {
           <h2 
             className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tighter text-white"
             style={{
-              marginBottom: '48px',
+              marginBottom: '16px',
               marginTop: '48px'
             }}
           >
@@ -64,7 +64,7 @@ export default function About() {
         >
           
           {/* Left Side: Feature Cards */}
-          <div className="space-y-8 md:space-y-10 w-full">
+          <div className="space-y-12 md:space-y-16 w-full">
             {features.map((item, idx) => (
               <div key={idx} className="group relative p-8 rounded-[2rem] bg-white/[0.02] border border-white/[0.05] hover:border-purple-500/30 transition-all duration-500">
                 <div className="flex gap-6 items-start">
