@@ -53,10 +53,9 @@ export default function CTA() {
               and provide exceptional customer service around the clock.
             </p>
             <div 
-              className="flex flex-col sm:flex-row justify-center mb-8"
+              className="flex justify-center"
               style={{
-                marginTop: '48px',
-                gap: '24px'
+                marginTop: '48px'
               }}
             >
               <Link
@@ -68,23 +67,10 @@ export default function CTA() {
                   paddingRight: '32px'
                 }}
               >
-                Start Free Trial
+                Get Started
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <button 
-                className="py-5 md:py-6 rounded-full bg-white/10 backdrop-blur-sm text-white text-lg md:text-xl font-semibold border border-white/20 hover:bg-white/20 hover:scale-[1.03] transition-transform transition-colors"
-                style={{
-                  letterSpacing: '-0.05em',
-                  paddingLeft: '32px',
-                  paddingRight: '32px'
-                }}
-              >
-                Schedule Demo
-              </button>
             </div>
-            <p className="text-white/70 text-sm">
-              No credit card required • 14-day free trial • Cancel anytime
-            </p>
           </div>
         </div>
       </div>
