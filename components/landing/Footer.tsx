@@ -104,7 +104,7 @@ export default function Footer() {
           }}
         >
           <p className="text-sm text-gray-500">
-            © 2024 Elara AI. All rights reserved.
+            © 2026 Elara AI. All rights reserved.
           </p>
           <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
             Powered by <span className="text-gray-400">FynkTech</span>
