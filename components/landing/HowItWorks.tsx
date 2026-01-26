@@ -27,7 +27,7 @@ export default function HowItWorks() {
   return (
     // Increased vertical padding (py-32 to py-48) to give the section more height
     <section 
-      className="relative overflow-hidden px-6 py-32 md:py-48 lg:py-56 bg-gradient-to-b from-[var(--scaffold-color)] via-[var(--card-color)]/20 to-[var(--scaffold-color)]"
+      className="relative overflow-hidden px-3 pb-16 md:pb-24 lg:pb-32 pt-0 bg-gradient-to-b from-[var(--scaffold-color)] via-[var(--card-color)]/20 to-[var(--scaffold-color)]"
       style={{
         display: 'flex',
         justifyContent: 'center',
@@ -45,7 +45,7 @@ export default function HowItWorks() {
         }}
       >
         {/* Header Section with more bottom margin */}
-        <div className="text-center mb-20 md:mb-28">
+        <div className="text-center mb-6 md:mb-10">
           <h2 className="text-3xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">
             How Elara Works
           </h2>
@@ -60,7 +60,7 @@ export default function HowItWorks() {
         <div 
           className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-stretch justify-center"
           style={{
-            marginTop: '72px'
+            marginTop: '36px'
           }}
         >
           {steps.map((step, index) => {

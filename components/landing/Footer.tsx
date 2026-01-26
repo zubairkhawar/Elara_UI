@@ -3,7 +3,7 @@ import { Mail, Twitter, Linkedin, Github } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="relative mt-32 min-h-[40vh] bg-[#030303] border-t border-white/[0.06] flex flex-col justify-between overflow-hidden">
+    <footer className="relative min-h-[40vh] bg-[#030303] border-t border-white/[0.06] flex flex-col justify-between overflow-hidden">
       
       {/* Ambient Glow */}
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-[520px] w-[900px] -translate-x-1/2 translate-y-1/3 rounded-full bg-purple-600/15 blur-[160px]" />

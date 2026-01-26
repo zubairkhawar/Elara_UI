@@ -22,7 +22,7 @@ export default function About() {
   return (
     /* Increased height with py-48 and lg:py-64 */
     <section 
-      className="relative overflow-hidden px-6 py-32 md:py-48 lg:py-64 bg-gradient-to-b from-[var(--scaffold-color)] to-[var(--scaffold-color)]"
+      className="relative overflow-hidden px-3 pb-16 md:pb-24 lg:pb-32 pt-0 bg-gradient-to-b from-[var(--scaffold-color)] to-[var(--scaffold-color)]"
       style={{
         display: 'flex',
         justifyContent: 'center',

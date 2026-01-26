@@ -11,7 +11,7 @@ export default function Hero() {
         display: 'flex',
         justifyContent: 'center',
         minHeight: '100vh',
-        padding: '80px 0',
+        padding: '80px 0 0 0',
         alignItems: 'center'
       }}
     >
@@ -33,7 +33,7 @@ export default function Hero() {
           width: '100%',
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '0 24px'
+          padding: '32px 24px'
         }}
       >
         <div 
