@@ -708,7 +708,7 @@ export default function CustomersPage() {
             {/* Header */}
             <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
               <div className="flex items-center gap-4 flex-1">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center shadow-md flex-shrink-0">
+                <div className="hidden sm:flex w-16 h-16 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] items-center justify-center shadow-md flex-shrink-0">
                   <span className="text-white font-semibold text-xl">{selectedCustomer.avatar}</span>
                 </div>
                 <div className="flex-1">
