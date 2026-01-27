@@ -62,24 +62,28 @@ export default function Navbar() {
             <div className="flex flex-col gap-4 items-center text-center">
               <Link
                 href="#about"
+                onClick={() => setIsMenuOpen(false)}
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-full"
               >
                 What Elara Does
               </Link>
               <Link
                 href="#how-it-works"
+                onClick={() => setIsMenuOpen(false)}
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-full"
               >
                 How It Works
               </Link>
               <Link
                 href="#businesses"
+                onClick={() => setIsMenuOpen(false)}
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-full"
               >
                 Businesses
               </Link>
               <Link
                 href="/dashboard"
+                onClick={() => setIsMenuOpen(false)}
                 className="py-2 rounded-lg text-white font-semibold text-center w-full"
                 style={{
                   background: 'linear-gradient(135deg, #1E1E5F 0%, #7B4FFF 100%)',
