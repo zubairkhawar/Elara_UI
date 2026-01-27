@@ -405,8 +405,54 @@ export default function BookingsPage() {
         </button>
       </div>
 
-      {/* Bookings Table */}
-      <div className="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden my-2 sm:my-3 md:my-4">
+      {/* Mobile List */}
+      <div className="space-y-3 md:hidden my-2 sm:my-3 md:my-4">
+        {currentBookings.map((booking) => (
+          <div
+            key={booking.id}
+            className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-3"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-gray-900 text-base">{booking.customer}</p>
+                <p className="text-xs text-gray-500 mt-1">{booking.email}</p>
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
+                  <User className="w-3 h-3 text-gray-400" />
+                  <span>{booking.phone}</span>
+                </p>
+              </div>
+              <span
+                className={`inline-flex px-2 py-1 rounded-full text-[11px] font-medium ${
+                  booking.status === 'Confirmed'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
+                {booking.status}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-1 text-xs text-gray-700">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3 text-gray-400" />
+                  <span>{booking.date}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-gray-500">
+                  <Clock className="w-3 h-3 text-gray-400" />
+                  <span>{booking.time}</span>
+                </div>
+              </div>
+              <button className="text-xs font-medium text-purple-600 hover:text-purple-700 hover:underline">
+                View details
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Bookings Table - Desktop / Tablet */}
+      <div className="hidden md:block rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden my-2 sm:my-3 md:my-4">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -535,6 +581,63 @@ export default function BookingsPage() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Pagination - Mobile (cards view) */}
+      <div className="md:hidden mt-3 flex flex-col gap-3">
+        <p className="text-xs text-gray-600 text-center">
+          Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+          <span className="font-medium">{Math.min(endIndex, bookings.length)}</span> of{' '}
+          <span className="font-medium">{bookings.length}</span> results
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return (
+                  <span key={page} className="px-1 text-gray-500 text-xs">
+                    ...
+                  </span>
+                );
+              }
+              return null;
+            })}
+          </div>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Next page"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

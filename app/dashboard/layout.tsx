@@ -7,12 +7,13 @@ import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
 
+  const sidebarMarginClass = isCollapsed ? 'md:ml-20' : 'md:ml-64';
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div
-        className="flex-1 flex flex-col transition-all duration-300 bg-gray-50"
-        style={{ marginLeft: isCollapsed ? '80px' : '256px' }}
+        className={`flex-1 flex flex-col transition-all duration-300 bg-gray-50 ${sidebarMarginClass}`}
       >
         <TopBar />
         <main className="flex-1 overflow-y-auto">

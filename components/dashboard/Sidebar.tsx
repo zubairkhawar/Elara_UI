@@ -2,37 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Calendar,
-  Bell,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  MessageCircle,
-  Headphones,
-  Mail,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSidebar } from '@/contexts/SidebarContext';
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const navItems: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
-  { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
-  { name: 'Customers', href: '/dashboard/customers', icon: Users },
-];
-
-const supportItems: NavItem[] = [
-  { name: 'Chat', href: '/dashboard/chat', icon: MessageCircle },
-  { name: 'Support', href: '/dashboard/support', icon: Headphones },
-  { name: 'Email', href: '/dashboard/email', icon: Mail },
-];
+import { mainNavItems, supportNavItems, NavItem } from './navConfig';
 
 export default function Sidebar() {
   const { isCollapsed, setIsCollapsed } = useSidebar();
@@ -40,7 +12,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full bg-[#101024] border-r border-white/10 transition-all duration-300 z-40 overflow-x-hidden ${
+      className={`hidden md:block fixed left-0 top-0 h-full bg-[#101024] border-r border-white/10 transition-all duration-300 z-40 overflow-x-hidden ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
       role="dialog"
@@ -89,7 +61,7 @@ export default function Sidebar() {
               </div>
             )}
             <ul className={`w-full flex flex-col ${isCollapsed ? 'space-y-2 px-2 pt-4' : 'space-y-1 p-1 pt-2'}`}>
-              {navItems.map((item) => {
+              {mainNavItems.map((item: NavItem) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 
@@ -132,7 +104,7 @@ export default function Sidebar() {
               </div>
             )}
             <ul className={`w-full flex flex-col ${isCollapsed ? 'space-y-2 px-2 pt-2' : 'space-y-1 p-1 pt-2'}`}>
-              {supportItems.map((item) => {
+              {supportNavItems.map((item: NavItem) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 
