@@ -287,9 +287,9 @@ export default function TopBar() {
         >
           <nav className="px-4 py-3 space-y-4">
             {/* Mobile nav header with close button */}
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-white/70 uppercase tracking-wider">
-                Navigation
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-lg font-bold bg-gradient-to-r from-white to-purple-300 bg-clip-text text-transparent">
+                Elara AI
               </p>
               <button
                 onClick={() => setMobileNavOpen(false)}
