@@ -5,3 +5,5 @@ django-environ>=0.11,<0.12
 djangorestframework-simplejwt>=5.3,<5.4
 tzdata>=2024.1
 django-cors-headers>=4.4,<4.5
+gunicorn>=21.2,<22.0
+whitenoise>=6.6,<7.0
