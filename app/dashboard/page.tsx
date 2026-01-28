@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Calendar, Phone, Users, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Calendar, Phone, Users, TrendingUp, Loader2 } from 'lucide-react';
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 type TimeRange = 'day' | 'month';
 
@@ -57,117 +60,169 @@ export default function DashboardPage() {
     getWeekStartISO(getTodayISO()),
   );
   const [showDayPicker, setShowDayPicker] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    total_bookings: 0,
+    bookings_change: 0,
+    calls_handled: 0,
+    calls_change: 0,
+    active_customers: 0,
+    customers_change: 0,
+    monthly_sales: 0,
+    sales_change: 0,
+  });
+  const [revenueData, setRevenueData] = useState<Array<{ label: string; value: number }>>([]);
+  const [bookingsGrid, setBookingsGrid] = useState<Array<Array<{ day: string; label: string; hasBooking: boolean }>>>([]);
+
+  const getHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    const token =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('elara_access_token')
+        : null;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  // Fetch dashboard stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/stats/`, {
+          headers: getHeaders(),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setStatsData(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  // Fetch revenue data when range changes
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token) return;
+
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/v1/bookings/revenue/?range=${salesRange}`,
+          { headers: getHeaders() }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setRevenueData(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch revenue:', err);
+      }
+    };
+
+    fetchRevenue();
+  }, [salesRange]);
+
+  // Fetch bookings heatmap when week changes
+  useEffect(() => {
+    const fetchHeatmap = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token || !selectedDate) return;
+
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/v1/bookings/heatmap/?week_start=${selectedDate}`,
+          { headers: getHeaders() }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setBookingsGrid(data.grid || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch heatmap:', err);
+      }
+    };
+
+    fetchHeatmap();
+  }, [selectedDate]);
+
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return `$${formatNumber(Math.round(amount))}`;
+  };
+
+  const formatChange = (change: number): string => {
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(0)}%`;
+  };
+
   const stats = [
     {
       title: 'Total bookings',
-      value: '1,247',
-      change: '+12%',
+      value: formatNumber(statsData.total_bookings),
+      change: formatChange(statsData.bookings_change),
       suffix: '',
       icon: Calendar,
       color: 'text-emerald-500',
     },
     {
       title: 'Calls handled',
-      value: '3,891',
-      change: '+8%',
+      value: formatNumber(statsData.calls_handled),
+      change: formatChange(statsData.calls_change),
       suffix: '',
       icon: Phone,
       color: 'text-sky-500',
     },
     {
       title: 'Active customers',
-      value: '892',
-      change: '+5%',
+      value: formatNumber(statsData.active_customers),
+      change: formatChange(statsData.customers_change),
       suffix: '',
       icon: Users,
       color: 'text-indigo-500',
     },
     {
       title: 'Monthly sales',
-      value: '$300',
-      change: '+18%',
+      value: formatCurrency(statsData.monthly_sales),
+      change: formatChange(statsData.sales_change),
       suffix: 'this month',
       icon: TrendingUp,
       color: 'text-purple-500',
     },
   ];
 
-  const recentBookings = [
-    {
-      id: 1,
-      customer: 'John Doe',
-      service: 'Consultation',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      status: 'Confirmed',
-    },
-    {
-      id: 2,
-      customer: 'Jane Smith',
-      service: 'Follow-up',
-      date: '2024-01-15',
-      time: '3:30 PM',
-      status: 'Pending',
-    },
-    {
-      id: 3,
-      customer: 'Mike Johnson',
-      service: 'Initial Meeting',
-      date: '2024-01-16',
-      time: '10:00 AM',
-      status: 'Confirmed',
-    },
-    {
-      id: 4,
-      customer: 'Sarah Williams',
-      service: 'Consultation',
-      date: '2024-01-16',
-      time: '1:00 PM',
-      status: 'Confirmed',
-    },
-  ];
-
-  // Sales per month (used for monthly sales view)
-  const monthlySales = useMemo(
-    () => [
-      { label: 'Jan', value: 12500 },
-      { label: 'Feb', value: 18200 },
-      { label: 'Mar', value: 21000 },
-      { label: 'Apr', value: 23500 },
-      { label: 'May', value: 26800 },
-      { label: 'Jun', value: 30100 },
-      { label: 'Jul', value: 32250 },
-      { label: 'Aug', value: 34500 },
-      { label: 'Sep', value: 33120 },
-      { label: 'Oct', value: 35980 },
-      { label: 'Nov', value: 37240 },
-      { label: 'Dec', value: 39850 },
-    ],
-    [],
-  );
-
-  const dailyRevenue = useMemo(
-    () => [
-      { label: 'Mon', value: 5200 },
-      { label: 'Tue', value: 6800 },
-      { label: 'Wed', value: 7400 },
-      { label: 'Thu', value: 8200 },
-      { label: 'Fri', value: 9100 },
-      { label: 'Sat', value: 4300 },
-      { label: 'Sun', value: 3100 },
-    ],
-    [],
-  );
-
-  const weeklyRevenue = useMemo(
-    () => [
-      { label: 'W1', value: 14500 },
-      { label: 'W2', value: 18800 },
-      { label: 'W3', value: 21900 },
-      { label: 'W4', value: 23650 },
-    ],
-    [],
-  );
+  // Use revenueData from API, with fallback to empty array
+  const currentRevenueData = revenueData.length > 0 ? revenueData : [];
 
   // Time slots for 24h with 30 min intervals (00:00 → 23:30)
   const timeSlots = useMemo(
@@ -182,19 +237,6 @@ export default function DashboardPage() {
   );
 
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
-
-  // Mock bookings grid: for each day of week and time slot, decide if there's a booking
-  const bookingsGrid = useMemo(
-    () =>
-      weekDays.map((day, dayIdx) =>
-        timeSlots.map((slotLabel, slotIdx) => ({
-          day,
-          label: slotLabel,
-          hasBooking: ((dayIdx + slotIdx * 3) % 17 === 0) || ((dayIdx * 5 + slotIdx) % 23 === 0),
-        })),
-      ),
-    [timeSlots],
-  );
 
   const todayISO = getTodayISO();
   const bookingsFilterLabel =
@@ -213,6 +255,14 @@ export default function DashboardPage() {
           Welcome back! Here's what's happening with your business today.
         </p>
       </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          <span className="ml-3 text-gray-600">Loading dashboard...</span>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
@@ -342,36 +392,44 @@ export default function DashboardPage() {
                     {/* Heatmap grid: rows = days, columns = 30min slots */}
                     <div className="flex-1">
                       <div className="flex h-full flex-col justify-between py-1">
-                        {bookingsGrid.map((row, dayIdx) => (
-                          <div
-                            key={weekDays[dayIdx]}
-                            className="grid gap-[2px]"
-                            style={{ gridTemplateColumns: 'repeat(48, minmax(0, 1fr))' }}
-                          >
-                            {row.map((cell, slotIdx) => (
-                              // eslint-disable-next-line react/no-array-index-key
-                              <div
-                                key={slotIdx}
-                                className="group relative flex items-center justify-center"
-                              >
-                                <div className="relative w-full">
-                                  {/* Square aspect ratio */}
-                                  <div className="pb-[100%]" />
-                                  <div
-                                    className={`absolute inset-0 rounded-[2px] ${
-                                      cell.hasBooking ? 'bg-emerald-400' : 'bg-gray-100'
-                                    }`}
-                                  />
-                                  <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                                    <span className="font-semibold">
-                                      {cell.day} {cell.label}
-                                    </span>
+                        {bookingsGrid.length > 0 ? (
+                          bookingsGrid.map((row, dayIdx) => (
+                            <div
+                              key={weekDays[dayIdx]}
+                              className="grid gap-[2px]"
+                              style={{ gridTemplateColumns: 'repeat(48, minmax(0, 1fr))' }}
+                            >
+                              {row.map((cell, slotIdx) => (
+                                // eslint-disable-next-line react/no-array-index-key
+                                <div
+                                  key={slotIdx}
+                                  className="group relative flex items-center justify-center"
+                                >
+                                  <div className="relative w-full">
+                                    {/* Square aspect ratio */}
+                                    <div className="pb-[100%]" />
+                                    <div
+                                      className={`absolute inset-0 rounded-[2px] ${
+                                        cell.hasBooking ? 'bg-emerald-400' : 'bg-gray-100'
+                                      }`}
+                                    />
+                                    <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                                      <span className="font-semibold">
+                                        {cell.day} {cell.label}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-center">
+                            <p className="max-w-xs text-xs sm:text-sm text-gray-400">
+                              No bookings data available for this week.
+                            </p>
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>
@@ -460,13 +518,8 @@ export default function DashboardPage() {
           {/* Bars */}
           <div className="flex-1 flex items-end">
             <div className="relative h-full w-full flex items-end gap-2 sm:gap-3 md:gap-4">
-              {(
-                salesRange === 'day'
-                  ? dailyRevenue
-                  : salesRange === 'week'
-                  ? weeklyRevenue
-                  : monthlySales
-              ).map((entry) => {
+              {currentRevenueData.length > 0 ? (
+                currentRevenueData.map((entry) => {
                 const maxY = 40000;
                 const clamped = Math.min(entry.value, maxY);
                 const height = (clamped / maxY) * 100;
@@ -491,7 +544,14 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 );
-              })}
+                })
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-center">
+                  <p className="max-w-xs text-xs sm:text-sm text-gray-400">
+                    No revenue data available.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
