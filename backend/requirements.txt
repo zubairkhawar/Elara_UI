@@ -1,0 +1,7 @@
+django>=5.0,<5.1
+djangorestframework>=3.15,<3.16
+psycopg2-binary>=2.9,<3.0
+django-environ>=0.11,<0.12
+djangorestframework-simplejwt>=5.3,<5.4
+tzdata>=2024.1
+django-cors-headers>=4.4,<4.5

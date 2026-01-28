@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, User, Settings, LogOut, Search, X, Menu } from 'lucide-react';
 import { mainNavItems, supportNavItems, NavItem } from './navConfig';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Notification {
   id: number;
@@ -52,6 +53,19 @@ export default function TopBar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const initials =
+    user?.name?.trim()
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase() ||
+    user?.email
+      ?.split('@')[0]
+      .slice(0, 2)
+      .toUpperCase() ||
+    'EL';
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -241,22 +255,34 @@ export default function TopBar() {
               className="flex items-center gap-1.5 sm:gap-2 cursor-pointer"
             >
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-xs sm:text-sm">JD</span>
+                <span className="text-white font-semibold text-xs sm:text-sm">
+                  {initials}
+                </span>
               </div>
-              <span className="font-medium text-white text-sm sm:text-base hidden sm:inline">John Doe</span>
+              <span className="font-medium text-white text-sm sm:text-base hidden sm:inline">
+                {user?.name || user?.email || 'Account'}
+              </span>
             </button>
 
             {userMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 sm:w-56 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
                 <div className="p-4 border-b border-gray-200">
-                  <p className="font-semibold text-gray-900">John Doe</p>
-                  <p className="text-sm text-gray-500 mt-0.5">john@example.com</p>
+                  <p className="font-semibold text-gray-900">
+                    {user?.name || 'Signed in'}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {user?.email || '—'}
+                  </p>
                 </div>
                 <div className="py-2">
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors">
+                  <Link
+                    href="/dashboard/profile"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
                     <User className="w-4 h-4" />
                     <span className="text-sm">Edit profile</span>
-                  </button>
+                  </Link>
                   <button className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors">
                     <Settings className="w-4 h-4" />
                     <span className="text-sm">Account settings</span>
@@ -266,7 +292,13 @@ export default function TopBar() {
                     <span className="text-sm">Support</span>
                   </button>
                   <div className="border-t border-gray-200 my-2"></div>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                    }}
+                  >
                     <LogOut className="w-4 h-4" />
                     <span className="text-sm">Sign out</span>
                   </button>

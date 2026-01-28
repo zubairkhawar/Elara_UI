@@ -3,6 +3,7 @@ import {
   Calendar,
   Bell,
   Users,
+  User,
   MessageCircle,
   Headphones,
   Mail,
@@ -19,6 +20,7 @@ export const mainNavItems: NavItem[] = [
   { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
   { name: 'Alerts', href: '/dashboard/alerts', icon: Bell },
   { name: 'Customers', href: '/dashboard/customers', icon: Users },
+  { name: 'Profile', href: '/dashboard/profile', icon: User },
 ];
 
 export const supportNavItems: NavItem[] = [
