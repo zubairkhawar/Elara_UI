@@ -20,7 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
             "service_hours",
             "custom_service_hours",
             "currency",
-            "timezone",
             "email_notifications",
             "sms_notifications",
         ]

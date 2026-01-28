@@ -7,7 +7,6 @@ import {
   Loader2, 
   Save, 
   DollarSign, 
-  Globe, 
   Bell, 
   Lock, 
   Download, 
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { authenticatedFetch } from '@/utils/api';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -29,23 +29,6 @@ const CURRENCIES = [
   { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
 ];
 
-// Common timezones
-const TIMEZONES = [
-  { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
-  { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
-  { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
-  { value: 'America/Denver', label: 'Mountain Time (US & Canada)' },
-  { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
-  { value: 'Europe/London', label: 'London (GMT)' },
-  { value: 'Europe/Paris', label: 'Paris (CET)' },
-  { value: 'Europe/Berlin', label: 'Berlin (CET)' },
-  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
-  { value: 'Asia/Riyadh', label: 'Riyadh (AST)' },
-  { value: 'Asia/Karachi', label: 'Karachi (PKT)' },
-  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
-  { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
-];
 
 export default function AccountSettingsPage() {
   const { user, updateProfile, logout } = useAuth();
@@ -53,7 +36,6 @@ export default function AccountSettingsPage() {
   
   // Settings state
   const [currency, setCurrency] = useState('USD');
-  const [timezone, setTimezone] = useState('UTC');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   
@@ -93,7 +75,6 @@ export default function AccountSettingsPage() {
         if (res.ok) {
           const data = await res.json();
           setCurrency(data.currency || 'USD');
-          setTimezone(data.timezone || 'UTC');
           setEmailNotifications(data.email_notifications !== false);
           setSmsNotifications(data.sms_notifications === true);
         } else if (res.status === 401) {
@@ -126,7 +107,6 @@ export default function AccountSettingsPage() {
         method: 'PATCH',
         body: JSON.stringify({
           currency,
-          timezone,
           email_notifications: emailNotifications,
           sms_notifications: smsNotifications,
         }),
@@ -142,7 +122,6 @@ export default function AccountSettingsPage() {
 
       const updatedData = await res.json();
       setCurrency(updatedData.currency);
-      setTimezone(updatedData.timezone);
       setEmailNotifications(updatedData.email_notifications);
       setSmsNotifications(updatedData.sms_notifications);
       
@@ -150,7 +129,6 @@ export default function AccountSettingsPage() {
       if (updateProfile) {
         await updateProfile({
           currency: updatedData.currency,
-          timezone: updatedData.timezone,
           email_notifications: updatedData.email_notifications,
           sms_notifications: updatedData.sms_notifications,
         } as any);
@@ -206,23 +184,131 @@ export default function AccountSettingsPage() {
     }
   };
 
-  const handleExportData = async () => {
+  const handleExportData = async (format: 'json' | 'pdf') => {
     try {
       const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/accounts/me/`);
-      if (res.ok) {
-        const data = await res.json();
+      if (!res.ok) {
+        throw new Error('Failed to fetch account data');
+      }
+
+      const data = await res.json();
+      const dateStr = new Date().toISOString().split('T')[0];
+
+      if (format === 'json') {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `elara-account-data-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `elara-account-data-${dateStr}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        setSuccessMessage('Account data exported successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
+      } else if (format === 'pdf') {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        let yPos = margin;
+
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(30, 30, 95); // Deep blue
+        doc.text('Account Data Export', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+
+        // Date
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Exported on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+
+        // Account Information
+        doc.setFontSize(14);
+        doc.setTextColor(30, 30, 95);
+        doc.text('Account Information', margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        const accountFields = [
+          ['Email', data.email || 'N/A'],
+          ['Name', data.name || 'N/A'],
+          ['Business Name', data.business_name || 'N/A'],
+          ['Phone Number', data.phone_number || 'N/A'],
+          ['Business Type', data.business_type || 'N/A'],
+          ['Service Hours', data.service_hours || 'N/A'],
+        ];
+
+        accountFields.forEach(([label, value]) => {
+          if (yPos > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${label}:`, margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          const textWidth = doc.getTextWidth(value);
+          if (textWidth > pageWidth - margin * 2 - 60) {
+            const lines = doc.splitTextToSize(value, pageWidth - margin * 2 - 60);
+            doc.text(lines, margin + 60, yPos);
+            yPos += lines.length * 5;
+          } else {
+            doc.text(value, margin + 60, yPos);
+            yPos += 7;
+          }
+        });
+
+        yPos += 5;
+
+        // Settings
+        doc.setFontSize(14);
+        doc.setTextColor(30, 30, 95);
+        if (yPos > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          yPos = margin;
+        }
+        doc.text('Settings', margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        const settingsFields = [
+          ['Currency', data.currency || 'USD'],
+          ['Email Notifications', data.email_notifications ? 'Enabled' : 'Disabled'],
+          ['SMS Notifications', data.sms_notifications ? 'Enabled' : 'Disabled'],
+        ];
+
+        settingsFields.forEach(([label, value]) => {
+          if (yPos > doc.internal.pageSize.getHeight() - 20) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${label}:`, margin, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(value, margin + 60, yPos);
+          yPos += 7;
+        });
+
+        // Footer
+        const totalPages = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            `Page ${i} of ${totalPages}`,
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: 'center' }
+          );
+        }
+
+        doc.save(`elara-account-data-${dateStr}.pdf`);
       }
+
+      setSuccessMessage(`Account data exported as ${format.toUpperCase()} successfully!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setErrorMessage('Failed to export data');
     }
@@ -311,40 +397,6 @@ export default function AccountSettingsPage() {
               </div>
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Timezone */}
-      <div className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-blue-50">
-            <Globe className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Timezone
-            </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Configure your timezone for displaying dates and times.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-md">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Timezone
-          </label>
-          <select
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm sm:text-base"
-          >
-            {TIMEZONES.map((tz) => (
-              <option key={tz.value} value={tz.value}>
-                {tz.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -545,17 +597,27 @@ export default function AccountSettingsPage() {
             <div>
               <p className="font-medium text-gray-900">Export Account Data</p>
               <p className="text-sm text-gray-500 mt-0.5">
-                Download a copy of your account data in JSON format
+                Download a copy of your account data in JSON or PDF format
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleExportData}
-              className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
-            >
-              <Download className="w-4 h-4 inline mr-2" />
-              Export
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleExportData('json')}
+                className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+              >
+                <Download className="w-4 h-4 inline mr-2" />
+                JSON
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExportData('pdf')}
+                className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+              >
+                <Download className="w-4 h-4 inline mr-2" />
+                PDF
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between p-4 rounded-lg border border-red-200 bg-red-50/30">
