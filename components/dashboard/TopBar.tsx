@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Bell, User, Settings, LogOut, Search, X, Menu } from 'lucide-react';
 import { mainNavItems, supportNavItems, NavItem } from './navConfig';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,10 +49,12 @@ export default function TopBar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const initials =
@@ -96,6 +98,54 @@ export default function TopBar() {
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
+  const searchTargets = useMemo(
+    () => [
+      {
+        href: '/dashboard',
+        keywords: ['home', 'overview', 'dashboard'],
+      },
+      {
+        href: '/dashboard/bookings',
+        keywords: ['booking', 'bookings', 'appointments', 'schedule'],
+      },
+      {
+        href: '/dashboard/customers',
+        keywords: ['customers', 'clients', 'people'],
+      },
+      {
+        href: '/dashboard/call-summaries',
+        keywords: ['calls', 'call summaries', 'summary', 'vapi'],
+      },
+      {
+        href: '/dashboard/services',
+        keywords: ['services', 'offerings', 'prices', 'pricing'],
+      },
+      {
+        href: '/dashboard/support',
+        keywords: ['support', 'help', 'contact'],
+      },
+      {
+        href: '/dashboard/profile',
+        keywords: ['profile', 'account', 'settings', 'business'],
+      },
+    ],
+    [],
+  );
+
+  const handleSearchSubmit = () => {
+    const term = searchQuery.trim().toLowerCase();
+    if (!term) return;
+
+    const match = searchTargets.find((target) =>
+      target.keywords.some((keyword) => term.includes(keyword)),
+    );
+
+    if (match) {
+      router.push(match.href);
+      setSearchQuery('');
+    }
+  };
+
   return (
     <header className="h-16 bg-[#101024] border-b border-white/10 flex items-center justify-between sticky top-0 z-30">
       <div className="w-full mx-auto px-4 sm:px-5 md:px-6 lg:px-8 xl:px-10 2xl:px-12 py-3 sm:py-3.5 md:py-4 flex items-center justify-between gap-3 sm:gap-4">
@@ -114,8 +164,16 @@ export default function TopBar() {
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-white/70 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Search or type command..."
+                placeholder="Jump to bookings, customers, services..."
                 className="w-full bg-transparent outline-none text-white placeholder-white/50 text-sm sm:text-base"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearchSubmit();
+                  }
+                }}
               />
             </div>
           </div>
