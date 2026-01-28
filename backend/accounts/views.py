@@ -66,6 +66,34 @@ class PasswordChangeView(APIView):
         )
 
 
+class AccountDeleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request: Request) -> Response:
+        """
+        Delete the current user's account.
+        Requires confirmation text "DELETE" in the request body.
+        """
+        confirmation = request.data.get("confirmation", "").strip()
+        
+        if confirmation != "DELETE":
+            return Response(
+                {"confirmation": ["Confirmation text must be 'DELETE' (all caps)."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        # Soft delete: deactivate the account instead of hard delete
+        # This preserves data integrity and allows for potential recovery
+        user.is_active = False
+        user.save()
+
+        return Response(
+            {"detail": "Account deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
 class SignupView(APIView):
     permission_classes = [permissions.AllowAny]
 

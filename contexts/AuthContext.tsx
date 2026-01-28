@@ -14,7 +14,6 @@ interface User {
   custom_service_hours?: string;
   currency?: string;
   timezone?: string;
-  language?: string;
   email_notifications?: boolean;
   sms_notifications?: boolean;
 }
@@ -49,7 +48,6 @@ interface ProfileUpdateData {
   custom_service_hours?: string;
   currency?: string;
   timezone?: string;
-  language?: string;
   email_notifications?: boolean;
   sms_notifications?: boolean;
 }

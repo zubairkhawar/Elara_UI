@@ -64,14 +64,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('PKR', 'PKR - Pakistani Rupee'),
     ])
     timezone = models.CharField(max_length=50, default='UTC', help_text='Timezone for displaying dates and times')
-    language = models.CharField(max_length=10, default='en', choices=[
-        ('en', 'English'),
-        ('es', 'Spanish'),
-        ('fr', 'French'),
-        ('de', 'German'),
-        ('ar', 'Arabic'),
-        ('ur', 'Urdu'),
-    ])
     email_notifications = models.BooleanField(default=True, help_text='Receive email notifications for bookings and updates')
     sms_notifications = models.BooleanField(default=False, help_text='Receive SMS notifications for bookings')
 

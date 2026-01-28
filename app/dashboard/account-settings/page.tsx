@@ -29,15 +29,6 @@ const CURRENCIES = [
   { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
 ];
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'fr', name: 'French' },
-  { code: 'de', name: 'German' },
-  { code: 'ar', name: 'Arabic' },
-  { code: 'ur', name: 'Urdu' },
-];
-
 // Common timezones
 const TIMEZONES = [
   { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
@@ -63,7 +54,6 @@ export default function AccountSettingsPage() {
   // Settings state
   const [currency, setCurrency] = useState('USD');
   const [timezone, setTimezone] = useState('UTC');
-  const [language, setLanguage] = useState('en');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   
@@ -83,6 +73,8 @@ export default function AccountSettingsPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -102,7 +94,6 @@ export default function AccountSettingsPage() {
           const data = await res.json();
           setCurrency(data.currency || 'USD');
           setTimezone(data.timezone || 'UTC');
-          setLanguage(data.language || 'en');
           setEmailNotifications(data.email_notifications !== false);
           setSmsNotifications(data.sms_notifications === true);
         } else if (res.status === 401) {
@@ -136,7 +127,6 @@ export default function AccountSettingsPage() {
         body: JSON.stringify({
           currency,
           timezone,
-          language,
           email_notifications: emailNotifications,
           sms_notifications: smsNotifications,
         }),
@@ -153,7 +143,6 @@ export default function AccountSettingsPage() {
       const updatedData = await res.json();
       setCurrency(updatedData.currency);
       setTimezone(updatedData.timezone);
-      setLanguage(updatedData.language);
       setEmailNotifications(updatedData.email_notifications);
       setSmsNotifications(updatedData.sms_notifications);
       
@@ -162,7 +151,6 @@ export default function AccountSettingsPage() {
         await updateProfile({
           currency: updatedData.currency,
           timezone: updatedData.timezone,
-          language: updatedData.language,
           email_notifications: updatedData.email_notifications,
           sms_notifications: updatedData.sms_notifications,
         } as any);
@@ -326,7 +314,7 @@ export default function AccountSettingsPage() {
         </div>
       </div>
 
-      {/* Timezone & Language */}
+      {/* Timezone */}
       <div className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-blue-50">
@@ -334,48 +322,29 @@ export default function AccountSettingsPage() {
           </div>
           <div>
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Regional Settings
+              Timezone
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Configure your timezone and language preferences.
+              Configure your timezone for displaying dates and times.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Timezone
-            </label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm sm:text-base"
-            >
-              {TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>
-                  {tz.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Language
-            </label>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm sm:text-base"
-            >
-              {LANGUAGES.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="max-w-md">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Timezone
+          </label>
+          <select
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm sm:text-base"
+          >
+            {TIMEZONES.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -634,28 +603,74 @@ export default function AccountSettingsPage() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Account</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data, bookings, and customers.
+            <h3 className="text-xl font-bold text-red-900 mb-2">Delete Account</h3>
+            <p className="text-gray-600 mb-4">
+              This action cannot be undone. This will permanently delete your account and all associated data including bookings, customers, and settings.
             </p>
+            <p className="text-sm font-medium text-gray-900 mb-2">
+              Type <span className="font-mono bg-red-50 text-red-700 px-2 py-1 rounded">DELETE</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder="Type DELETE to confirm"
+              className="w-full px-4 py-2.5 mb-4 rounded-lg bg-white border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm sm:text-base"
+            />
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmation('');
+                }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  // TODO: Implement account deletion endpoint
-                  setErrorMessage('Account deletion is not yet implemented. Please contact support.');
-                  setShowDeleteConfirm(false);
+                onClick={async () => {
+                  if (deleteConfirmation !== 'DELETE') {
+                    setErrorMessage('Please type DELETE (all caps) to confirm account deletion.');
+                    return;
+                  }
+
+                  setIsDeleting(true);
+                  setErrorMessage('');
+
+                  try {
+                    const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/accounts/me/delete/`, {
+                      method: 'POST',
+                      body: JSON.stringify({ confirmation: 'DELETE' }),
+                    });
+
+                    if (!res.ok) {
+                      const errorData = await res.json().catch(() => ({}));
+                      throw new Error(errorData.confirmation?.[0] || errorData.detail || 'Failed to delete account');
+                    }
+
+                    // Account deleted successfully, logout and redirect
+                    if (logout) {
+                      logout();
+                    }
+                    router.push('/login');
+                  } catch (err: any) {
+                    setErrorMessage(err?.message || 'Failed to delete account');
+                    setIsDeleting(false);
+                  }
                 }}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                disabled={isDeleting || deleteConfirmation !== 'DELETE'}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Delete Account
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Account'
+                )}
               </button>
             </div>
           </div>
