@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Check, Loader2, Save, DollarSign } from 'lucide-react';
+import { authenticatedFetch } from '@/utils/api';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -23,20 +24,6 @@ export default function AccountSettingsPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const getHeaders = (): HeadersInit => {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    const token =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('elara_access_token')
-        : null;
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-    return headers;
-  };
-
   useEffect(() => {
     const fetchUserData = async () => {
       const token =
@@ -49,13 +36,15 @@ export default function AccountSettingsPage() {
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
-          headers: getHeaders(),
-        });
+        const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/accounts/me/`);
 
         if (res.ok) {
           const data = await res.json();
           setCurrency(data.currency || 'USD');
+        } else if (res.status === 401) {
+          // Token refresh failed, user will be redirected to login
+          setLoading(false);
+          return;
         }
       } catch (err) {
         console.error('Failed to fetch user data:', err);
@@ -79,14 +68,17 @@ export default function AccountSettingsPage() {
     setErrorMessage('');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
+      const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
         method: 'PATCH',
-        headers: getHeaders(),
         body: JSON.stringify({ currency }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        if (res.status === 401) {
+          // Token refresh failed, user will be redirected to login
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.detail || 'Failed to update settings');
       }
 

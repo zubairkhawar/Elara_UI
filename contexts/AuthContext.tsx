@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { authenticatedFetch } from '@/utils/api';
 
 interface User {
   email: string;
@@ -139,17 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (data: Partial<ProfileUpdateData>) => {
-    const access = localStorage.getItem('elara_access_token');
-    if (!access) {
-      throw new Error('Not authenticated');
-    }
-
-    const res = await fetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
+    const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${access}`,
-      },
       body: JSON.stringify(data),
     });
 
