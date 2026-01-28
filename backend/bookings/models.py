@@ -56,6 +56,13 @@ class Booking(models.Model):
         on_delete=models.CASCADE,
         related_name="bookings",
     )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField()
     status = models.CharField(

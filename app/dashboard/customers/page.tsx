@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Phone, Calendar, Search, Plus, ChevronLeft, ChevronRight, X, Clock, Trash2, Edit2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Phone, Calendar, Search, Plus, ChevronLeft, ChevronRight, X, Clock, Trash2, Edit2, Loader2 } from 'lucide-react';
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 interface BookingDetail {
   id: number;
@@ -16,6 +19,7 @@ interface Customer {
   id: number;
   name: string;
   phone: string;
+  email?: string;
   bookings: number;
   lastBooking: string;
   status: string;
@@ -34,434 +38,237 @@ export default function CustomersPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [savingId, setSavingId] = useState<number | null>(null);
   const itemsPerPage = 12;
 
-  const [customers, setCustomers] = useState<Customer[]>([
-    {
-      id: 1,
-      name: 'John Doe',
-      phone: '+1 (555) 123-4567',
-      bookings: 12,
-      lastBooking: '2024-01-10',
-      status: 'Active',
-      avatar: 'JD',
-      bookingDetails: [
-        { id: 1, date: '2024-01-10', time: '2:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 2, date: '2024-01-05', time: '10:30 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 3, date: '2023-12-28', time: '3:00 PM', service: 'Review', duration: '45 min', status: 'Completed' },
-        { id: 4, date: '2023-12-20', time: '11:00 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 5, date: '2023-12-15', time: '2:30 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 6, date: '2023-12-10', time: '9:00 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 7, date: '2023-12-05', time: '1:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 8, date: '2023-11-28', time: '3:30 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 9, date: '2023-11-20', time: '10:00 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 10, date: '2023-11-15', time: '2:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 11, date: '2023-11-10', time: '11:30 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 12, date: '2023-11-05', time: '4:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      phone: '+1 (555) 234-5678',
-      bookings: 8,
-      lastBooking: '2024-01-08',
-      status: 'Active',
-      avatar: 'JS',
-      bookingDetails: [
-        { id: 1, date: '2024-01-08', time: '3:30 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 2, date: '2024-01-02', time: '2:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 3, date: '2023-12-25', time: '10:00 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 4, date: '2023-12-18', time: '1:30 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 5, date: '2023-12-12', time: '3:00 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 6, date: '2023-12-05', time: '10:30 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 7, date: '2023-11-28', time: '2:30 PM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 8, date: '2023-11-20', time: '11:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      phone: '+1 (555) 345-6789',
-      bookings: 5,
-      lastBooking: '2024-01-05',
-      status: 'Active',
-      avatar: 'MJ',
-      bookingDetails: [
-        { id: 1, date: '2024-01-05', time: '10:00 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 2, date: '2023-12-22', time: '1:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 4,
-      name: 'Sarah Williams',
-      phone: '+1 (555) 456-7890',
-      bookings: 15,
-      lastBooking: '2024-01-12',
-      status: 'Active',
-      avatar: 'SW',
-      bookingDetails: [
-        { id: 1, date: '2024-01-12', time: '1:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 2, date: '2024-01-05', time: '4:00 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 3, date: '2023-12-29', time: '11:30 AM', service: 'Review', duration: '45 min', status: 'Completed' },
-        { id: 4, date: '2023-12-20', time: '2:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 5, date: '2023-12-15', time: '10:00 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 6, date: '2023-12-10', time: '3:00 PM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 7, date: '2023-12-05', time: '1:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 8, date: '2023-11-28', time: '11:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 9, date: '2023-11-20', time: '2:00 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 10, date: '2023-11-15', time: '4:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 11, date: '2023-11-10', time: '9:30 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 12, date: '2023-11-05', time: '1:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 13, date: '2023-10-28', time: '3:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 14, date: '2023-10-20', time: '10:30 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 15, date: '2023-10-15', time: '2:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 5,
-      name: 'David Brown',
-      phone: '+1 (555) 567-8901',
-      bookings: 3,
-      lastBooking: '2023-12-20',
-      status: 'Inactive',
-      avatar: 'DB',
-      bookingDetails: [
-        { id: 1, date: '2023-12-20', time: '11:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 2, date: '2023-11-15', time: '3:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 6,
-      name: 'Emily Davis',
-      phone: '+1 (555) 678-9012',
-      bookings: 20,
-      lastBooking: '2024-01-14',
-      status: 'Active',
-      avatar: 'ED',
-      bookingDetails: [
-        { id: 1, date: '2024-01-14', time: '2:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-        { id: 2, date: '2024-01-08', time: '10:00 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 3, date: '2024-01-02', time: '1:30 PM', service: 'Review', duration: '45 min', status: 'Completed' },
-        { id: 4, date: '2023-12-26', time: '3:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 7,
-      name: 'Robert Wilson',
-      phone: '+1 (555) 789-0123',
-      bookings: 9,
-      lastBooking: '2024-01-11',
-      status: 'Active',
-      avatar: 'RW',
-      bookingDetails: [
-        { id: 1, date: '2024-01-11', time: '9:00 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-        { id: 2, date: '2024-01-04', time: '2:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 8,
-      name: 'Lisa Anderson',
-      phone: '+1 (555) 890-1234',
-      bookings: 14,
-      lastBooking: '2024-01-09',
-      status: 'Active',
-      avatar: 'LA',
-      bookingDetails: [
-        { id: 1, date: '2024-01-09', time: '4:00 PM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-        { id: 2, date: '2024-01-03', time: '11:00 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 9,
-      name: 'Michael Taylor',
-      phone: '+1 (555) 901-2345',
-      bookings: 7,
-      lastBooking: '2024-01-07',
-      status: 'Active',
-      avatar: 'MT',
-      bookingDetails: [
-        { id: 1, date: '2024-01-07', time: '10:30 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 10,
-      name: 'Jennifer Martinez',
-      phone: '+1 (555) 012-3456',
-      bookings: 18,
-      lastBooking: '2024-01-13',
-      status: 'Active',
-      avatar: 'JM',
-      bookingDetails: [
-        { id: 1, date: '2024-01-13', time: '3:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-        { id: 2, date: '2024-01-06', time: '1:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 11,
-      name: 'Christopher Lee',
-      phone: '+1 (555) 123-4568',
-      bookings: 6,
-      lastBooking: '2024-01-06',
-      status: 'Active',
-      avatar: 'CL',
-      bookingDetails: [
-        { id: 1, date: '2024-01-06', time: '11:00 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 12,
-      name: 'Amanda White',
-      phone: '+1 (555) 234-5679',
-      bookings: 11,
-      lastBooking: '2024-01-10',
-      status: 'Active',
-      avatar: 'AW',
-      bookingDetails: [
-        { id: 1, date: '2024-01-10', time: '1:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 13,
-      name: 'Daniel Harris',
-      phone: '+1 (555) 345-6780',
-      bookings: 4,
-      lastBooking: '2023-12-28',
-      status: 'Inactive',
-      avatar: 'DH',
-      bookingDetails: [
-        { id: 1, date: '2023-12-28', time: '9:30 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 14,
-      name: 'Jessica Clark',
-      phone: '+1 (555) 456-7891',
-      bookings: 16,
-      lastBooking: '2024-01-12',
-      status: 'Active',
-      avatar: 'JC',
-      bookingDetails: [
-        { id: 1, date: '2024-01-12', time: '2:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 15,
-      name: 'Matthew Lewis',
-      phone: '+1 (555) 567-8902',
-      bookings: 10,
-      lastBooking: '2024-01-08',
-      status: 'Active',
-      avatar: 'ML',
-      bookingDetails: [
-        { id: 1, date: '2024-01-08', time: '10:00 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 16,
-      name: 'Ashley Walker',
-      phone: '+1 (555) 678-9013',
-      bookings: 13,
-      lastBooking: '2024-01-11',
-      status: 'Active',
-      avatar: 'AW',
-      bookingDetails: [
-        { id: 1, date: '2024-01-11', time: '3:30 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 17,
-      name: 'James Hall',
-      phone: '+1 (555) 789-0124',
-      bookings: 8,
-      lastBooking: '2024-01-09',
-      status: 'Active',
-      avatar: 'JH',
-      bookingDetails: [
-        { id: 1, date: '2024-01-09', time: '11:30 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 18,
-      name: 'Michelle Allen',
-      phone: '+1 (555) 890-1235',
-      bookings: 19,
-      lastBooking: '2024-01-14',
-      status: 'Active',
-      avatar: 'MA',
-      bookingDetails: [
-        { id: 1, date: '2024-01-14', time: '1:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 19,
-      name: 'Andrew Young',
-      phone: '+1 (555) 901-2346',
-      bookings: 5,
-      lastBooking: '2023-12-15',
-      status: 'Inactive',
-      avatar: 'AY',
-      bookingDetails: [
-        { id: 1, date: '2023-12-15', time: '9:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 20,
-      name: 'Stephanie King',
-      phone: '+1 (555) 012-3457',
-      bookings: 22,
-      lastBooking: '2024-01-15',
-      status: 'Active',
-      avatar: 'SK',
-      bookingDetails: [
-        { id: 1, date: '2024-01-15', time: '4:00 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 21,
-      name: 'Ryan Wright',
-      phone: '+1 (555) 123-4569',
-      bookings: 7,
-      lastBooking: '2024-01-07',
-      status: 'Active',
-      avatar: 'RW',
-      bookingDetails: [
-        { id: 1, date: '2024-01-07', time: '10:30 AM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 22,
-      name: 'Nicole Lopez',
-      phone: '+1 (555) 234-5680',
-      bookings: 12,
-      lastBooking: '2024-01-10',
-      status: 'Active',
-      avatar: 'NL',
-      bookingDetails: [
-        { id: 1, date: '2024-01-10', time: '2:30 PM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 23,
-      name: 'Kevin Hill',
-      phone: '+1 (555) 345-6781',
-      bookings: 9,
-      lastBooking: '2024-01-08',
-      status: 'Active',
-      avatar: 'KH',
-      bookingDetails: [
-        { id: 1, date: '2024-01-08', time: '11:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 24,
-      name: 'Rachel Scott',
-      phone: '+1 (555) 456-7892',
-      bookings: 14,
-      lastBooking: '2024-01-12',
-      status: 'Active',
-      avatar: 'RS',
-      bookingDetails: [
-        { id: 1, date: '2024-01-12', time: '1:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 25,
-      name: 'Brandon Green',
-      phone: '+1 (555) 567-8903',
-      bookings: 6,
-      lastBooking: '2023-11-20',
-      status: 'Inactive',
-      avatar: 'BG',
-      bookingDetails: [
-        { id: 1, date: '2023-11-20', time: '9:30 AM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 26,
-      name: 'Lauren Adams',
-      phone: '+1 (555) 678-9014',
-      bookings: 17,
-      lastBooking: '2024-01-13',
-      status: 'Active',
-      avatar: 'LA',
-      bookingDetails: [
-        { id: 1, date: '2024-01-13', time: '3:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 27,
-      name: 'Justin Baker',
-      phone: '+1 (555) 789-0125',
-      bookings: 11,
-      lastBooking: '2024-01-09',
-      status: 'Active',
-      avatar: 'JB',
-      bookingDetails: [
-        { id: 1, date: '2024-01-09', time: '2:00 PM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 28,
-      name: 'Samantha Nelson',
-      phone: '+1 (555) 890-1236',
-      bookings: 15,
-      lastBooking: '2024-01-11',
-      status: 'Active',
-      avatar: 'SN',
-      bookingDetails: [
-        { id: 1, date: '2024-01-11', time: '4:00 PM', service: 'Follow-up', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 29,
-      name: 'Tyler Carter',
-      phone: '+1 (555) 901-2347',
-      bookings: 8,
-      lastBooking: '2024-01-06',
-      status: 'Active',
-      avatar: 'TC',
-      bookingDetails: [
-        { id: 1, date: '2024-01-06', time: '11:30 AM', service: 'Initial Meeting', duration: '45 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 30,
-      name: 'Megan Mitchell',
-      phone: '+1 (555) 012-3458',
-      bookings: 21,
-      lastBooking: '2024-01-14',
-      status: 'Active',
-      avatar: 'MM',
-      bookingDetails: [
-        { id: 1, date: '2024-01-14', time: '4:30 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 31,
-      name: 'Jordan Perez',
-      phone: '+1 (555) 123-4570',
-      bookings: 4,
-      lastBooking: '2023-12-10',
-      status: 'Inactive',
-      avatar: 'JP',
-      bookingDetails: [
-        { id: 1, date: '2023-12-10', time: '9:00 AM', service: 'Review', duration: '30 min', status: 'Completed' },
-      ],
-    },
-    {
-      id: 32,
-      name: 'Brittany Roberts',
-      phone: '+1 (555) 234-5681',
-      bookings: 13,
-      lastBooking: '2024-01-10',
-      status: 'Active',
-      avatar: 'BR',
-      bookingDetails: [
-        { id: 1, date: '2024-01-10', time: '1:00 PM', service: 'Consultation', duration: '60 min', status: 'Completed' },
-      ],
-    },
-  ]);
+  const getHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    const token =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('elara_access_token')
+        : null;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/clients/`, {
+          headers: getHeaders(),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to load customers');
+        }
+
+        const data = await res.json();
+        const formattedCustomers: Customer[] = await Promise.all(
+          data.map(async (c: any) => {
+            // Fetch bookings for this client
+            const bookingsRes = await fetch(
+              `${API_BASE_URL}/api/v1/bookings/?client=${c.id}`,
+              { headers: getHeaders() }
+            );
+            const bookingsData = bookingsRes.ok ? await bookingsRes.json() : [];
+            const bookingDetails: BookingDetail[] = bookingsData.map((b: any) => ({
+              id: b.id,
+              date: formatDate(b.starts_at),
+              time: new Date(b.starts_at).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              }),
+              service: b.service_name || 'N/A',
+              duration: `${Math.round(
+                (new Date(b.ends_at).getTime() - new Date(b.starts_at).getTime()) / 60000
+              )} min`,
+              status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+            }));
+
+            const initials = c.name
+              .split(' ')
+              .map((n: string) => n[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 2);
+
+            return {
+              id: c.id,
+              name: c.name,
+              phone: c.phone_number || '',
+              email: c.email || '',
+              bookings: c.bookings_count || bookingsData.length,
+              lastBooking:
+                bookingsData.length > 0
+                  ? formatDate(bookingsData[0].starts_at)
+                  : 'N/A',
+              status: bookingsData.length > 0 ? 'Active' : 'Inactive',
+              avatar: initials,
+              bookingDetails,
+            };
+          })
+        );
+
+        setCustomers(formattedCustomers);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load customers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
+
+  const handleSaveEdit = async () => {
+    if (!selectedCustomer) return;
+
+    setSavingId(selectedCustomer.id);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/clients/${selectedCustomer.id}/`,
+        {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            name: editedName,
+            phone_number: editedPhone,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Failed to update customer');
+      }
+
+      const updated = await res.json();
+      const initials = updated.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+
+      const updatedCustomer: Customer = {
+        ...selectedCustomer,
+        name: updated.name,
+        phone: updated.phone_number || '',
+        avatar: initials,
+      };
+
+      setCustomers(
+        customers.map((c) => (c.id === selectedCustomer.id ? updatedCustomer : c))
+      );
+      setSelectedCustomer(updatedCustomer);
+      setIsEditing(false);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update customer');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/clients/${selectedCustomer.id}/`,
+        {
+          method: 'DELETE',
+          headers: getHeaders(),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error('Failed to delete customer');
+      }
+
+      setCustomers(customers.filter((c) => c.id !== selectedCustomer.id));
+      setSelectedCustomer(null);
+      setShowDeleteConfirm(false);
+      const newTotalPages = Math.ceil((customers.length - 1) / itemsPerPage);
+      if (currentPage > newTotalPages && newTotalPages > 0) {
+        setCurrentPage(newTotalPages);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete customer');
+    }
+  };
+
+  const handleAddCustomer = async () => {
+    if (!newCustomerName.trim() || !newCustomerPhone.trim()) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/clients/`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          name: newCustomerName.trim(),
+          phone_number: newCustomerPhone.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to create customer');
+      }
+
+      const newClient = await res.json();
+      const initials = newClient.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+
+      const newCustomer: Customer = {
+        id: newClient.id,
+        name: newClient.name,
+        phone: newClient.phone_number || '',
+        email: newClient.email || '',
+        bookings: 0,
+        lastBooking: 'N/A',
+        status: 'Active',
+        avatar: initials,
+        bookingDetails: [],
+      };
+
+      setCustomers([...customers, newCustomer]);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setShowAddModal(false);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create customer');
+    }
+  };
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -485,52 +292,6 @@ export default function CustomersPage() {
   };
 
   const totalBookings = filteredCustomers.reduce((sum, c) => sum + c.bookings, 0);
-
-  const handleSaveEdit = () => {
-    if (selectedCustomer) {
-      setCustomers(customers.map(c => 
-        c.id === selectedCustomer.id 
-          ? { ...c, name: editedName, phone: editedPhone, avatar: editedName.split(' ').map(n => n[0]).join('').toUpperCase() }
-          : c
-      ));
-      setSelectedCustomer({ ...selectedCustomer, name: editedName, phone: editedPhone, avatar: editedName.split(' ').map(n => n[0]).join('').toUpperCase() });
-      setIsEditing(false);
-    }
-  };
-
-  const handleDeleteCustomer = () => {
-    if (selectedCustomer) {
-      setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
-      setSelectedCustomer(null);
-      setShowDeleteConfirm(false);
-      // Reset to first page if current page becomes empty
-      const newTotalPages = Math.ceil((customers.length - 1) / itemsPerPage);
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages);
-      }
-    }
-  };
-
-  const handleAddCustomer = () => {
-    if (newCustomerName.trim() && newCustomerPhone.trim()) {
-      const newId = Math.max(...customers.map(c => c.id), 0) + 1;
-      const newAvatar = newCustomerName.split(' ').map(n => n[0]).join('').toUpperCase();
-      const newCustomer: Customer = {
-        id: newId,
-        name: newCustomerName.trim(),
-        phone: newCustomerPhone.trim(),
-        bookings: 0,
-        lastBooking: 'N/A',
-        status: 'Active',
-        avatar: newAvatar,
-        bookingDetails: [],
-      };
-      setCustomers([...customers, newCustomer]);
-      setNewCustomerName('');
-      setNewCustomerPhone('');
-      setShowAddModal(false);
-    }
-  };
 
   return (
     <>
@@ -570,6 +331,21 @@ export default function CustomersPage() {
           </div>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <span className="ml-3 text-gray-600">Loading customers...</span>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 my-2 sm:my-3 md:my-4">
           <div className="flex-1 relative">
@@ -600,6 +376,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Customers Grid */}
+        {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
           {currentCustomers.map((customer) => (
             <div
@@ -645,8 +422,10 @@ export default function CustomersPage() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Pagination */}
+        {!loading && (
         <div className="rounded-xl bg-white border border-gray-200 shadow-sm px-4 sm:px-6 md:px-8 py-4 my-2 sm:my-3 md:my-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
@@ -702,6 +481,7 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Customer Details Modal */}
@@ -759,9 +539,10 @@ export default function CustomersPage() {
                     <>
                       <button
                         onClick={handleSaveEdit}
-                        className="px-3 sm:px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium"
+                        disabled={savingId === selectedCustomer.id}
+                        className="px-3 sm:px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Save
+                        {savingId === selectedCustomer.id ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => {

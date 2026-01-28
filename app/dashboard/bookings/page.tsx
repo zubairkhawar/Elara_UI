@@ -1,367 +1,116 @@
 'use client';
 
-import { useState } from 'react';
-import { Calendar, Clock, User, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, Clock, User, Search, Plus, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+interface Booking {
+  id: number;
+  customer: string;
+  email: string;
+  service: string;
+  date: string;
+  time: string;
+  duration: string;
+  status: string;
+  phone: string;
+}
 
 export default function BookingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const itemsPerPage = 10;
 
-  const bookings = [
-    {
-      id: 1,
-      customer: 'John Doe',
-      email: 'john@example.com',
-      service: 'Consultation',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 123-4567',
-    },
-    {
-      id: 2,
-      customer: 'Jane Smith',
-      email: 'jane@example.com',
-      service: 'Follow-up',
-      date: '2024-01-15',
-      time: '3:30 PM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 234-5678',
-    },
-    {
-      id: 3,
-      customer: 'Mike Johnson',
-      email: 'mike@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-16',
-      time: '10:00 AM',
-      duration: '45 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 345-6789',
-    },
-    {
-      id: 4,
-      customer: 'Sarah Williams',
-      email: 'sarah@example.com',
-      service: 'Consultation',
-      date: '2024-01-16',
-      time: '1:00 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 456-7890',
-    },
-    {
-      id: 5,
-      customer: 'David Brown',
-      email: 'david@example.com',
-      service: 'Review',
-      date: '2024-01-17',
-      time: '11:00 AM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 567-8901',
-    },
-    {
-      id: 6,
-      customer: 'Emily Davis',
-      email: 'emily@example.com',
-      service: 'Consultation',
-      date: '2024-01-17',
-      time: '2:30 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 678-9012',
-    },
-    {
-      id: 7,
-      customer: 'Robert Wilson',
-      email: 'robert@example.com',
-      service: 'Follow-up',
-      date: '2024-01-18',
-      time: '9:00 AM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 789-0123',
-    },
-    {
-      id: 8,
-      customer: 'Lisa Anderson',
-      email: 'lisa@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-18',
-      time: '4:00 PM',
-      duration: '45 min',
-      status: 'Pending',
-      phone: '+1 (555) 890-1234',
-    },
-    {
-      id: 9,
-      customer: 'Michael Taylor',
-      email: 'michael@example.com',
-      service: 'Consultation',
-      date: '2024-01-19',
-      time: '10:30 AM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 901-2345',
-    },
-    {
-      id: 10,
-      customer: 'Jennifer Martinez',
-      email: 'jennifer@example.com',
-      service: 'Review',
-      date: '2024-01-19',
-      time: '3:00 PM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 012-3456',
-    },
-    {
-      id: 11,
-      customer: 'Christopher Lee',
-      email: 'christopher@example.com',
-      service: 'Follow-up',
-      date: '2024-01-20',
-      time: '11:00 AM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 123-4568',
-    },
-    {
-      id: 12,
-      customer: 'Amanda White',
-      email: 'amanda@example.com',
-      service: 'Consultation',
-      date: '2024-01-20',
-      time: '1:30 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 234-5679',
-    },
-    {
-      id: 13,
-      customer: 'Daniel Harris',
-      email: 'daniel@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-21',
-      time: '9:30 AM',
-      duration: '45 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 345-6780',
-    },
-    {
-      id: 14,
-      customer: 'Jessica Clark',
-      email: 'jessica@example.com',
-      service: 'Review',
-      date: '2024-01-21',
-      time: '2:00 PM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 456-7891',
-    },
-    {
-      id: 15,
-      customer: 'Matthew Lewis',
-      email: 'matthew@example.com',
-      service: 'Consultation',
-      date: '2024-01-22',
-      time: '10:00 AM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 567-8902',
-    },
-    {
-      id: 16,
-      customer: 'Ashley Walker',
-      email: 'ashley@example.com',
-      service: 'Follow-up',
-      date: '2024-01-22',
-      time: '3:30 PM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 678-9013',
-    },
-    {
-      id: 17,
-      customer: 'James Hall',
-      email: 'james@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-23',
-      time: '11:30 AM',
-      duration: '45 min',
-      status: 'Pending',
-      phone: '+1 (555) 789-0124',
-    },
-    {
-      id: 18,
-      customer: 'Michelle Allen',
-      email: 'michelle@example.com',
-      service: 'Consultation',
-      date: '2024-01-23',
-      time: '1:00 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 890-1235',
-    },
-    {
-      id: 19,
-      customer: 'Andrew Young',
-      email: 'andrew@example.com',
-      service: 'Review',
-      date: '2024-01-24',
-      time: '9:00 AM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 901-2346',
-    },
-    {
-      id: 20,
-      customer: 'Stephanie King',
-      email: 'stephanie@example.com',
-      service: 'Follow-up',
-      date: '2024-01-24',
-      time: '4:00 PM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 012-3457',
-    },
-    {
-      id: 21,
-      customer: 'Ryan Wright',
-      email: 'ryan@example.com',
-      service: 'Consultation',
-      date: '2024-01-25',
-      time: '10:30 AM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 123-4569',
-    },
-    {
-      id: 22,
-      customer: 'Nicole Lopez',
-      email: 'nicole@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-25',
-      time: '2:30 PM',
-      duration: '45 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 234-5680',
-    },
-    {
-      id: 23,
-      customer: 'Kevin Hill',
-      email: 'kevin@example.com',
-      service: 'Review',
-      date: '2024-01-26',
-      time: '11:00 AM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 345-6781',
-    },
-    {
-      id: 24,
-      customer: 'Rachel Scott',
-      email: 'rachel@example.com',
-      service: 'Consultation',
-      date: '2024-01-26',
-      time: '1:30 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 456-7892',
-    },
-    {
-      id: 25,
-      customer: 'Brandon Green',
-      email: 'brandon@example.com',
-      service: 'Follow-up',
-      date: '2024-01-27',
-      time: '9:30 AM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 567-8903',
-    },
-    {
-      id: 26,
-      customer: 'Lauren Adams',
-      email: 'lauren@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-27',
-      time: '3:00 PM',
-      duration: '45 min',
-      status: 'Pending',
-      phone: '+1 (555) 678-9014',
-    },
-    {
-      id: 27,
-      customer: 'Justin Baker',
-      email: 'justin@example.com',
-      service: 'Consultation',
-      date: '2024-01-28',
-      time: '10:00 AM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 789-0125',
-    },
-    {
-      id: 28,
-      customer: 'Samantha Nelson',
-      email: 'samantha@example.com',
-      service: 'Review',
-      date: '2024-01-28',
-      time: '2:00 PM',
-      duration: '30 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 890-1236',
-    },
-    {
-      id: 29,
-      customer: 'Tyler Carter',
-      email: 'tyler@example.com',
-      service: 'Follow-up',
-      date: '2024-01-29',
-      time: '11:30 AM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 901-2347',
-    },
-    {
-      id: 30,
-      customer: 'Megan Mitchell',
-      email: 'megan@example.com',
-      service: 'Consultation',
-      date: '2024-01-29',
-      time: '4:30 PM',
-      duration: '60 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 012-3458',
-    },
-    {
-      id: 31,
-      customer: 'Jordan Perez',
-      email: 'jordan@example.com',
-      service: 'Initial Meeting',
-      date: '2024-01-30',
-      time: '9:00 AM',
-      duration: '45 min',
-      status: 'Confirmed',
-      phone: '+1 (555) 123-4570',
-    },
-    {
-      id: 32,
-      customer: 'Brittany Roberts',
-      email: 'brittany@example.com',
-      service: 'Review',
-      date: '2024-01-30',
-      time: '1:00 PM',
-      duration: '30 min',
-      status: 'Pending',
-      phone: '+1 (555) 234-5681',
-    },
-  ];
+  const getHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    const token =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('elara_access_token')
+        : null;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const formatDuration = (startsAt: string, endsAt: string): string => {
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
+    const diffMs = end.getTime() - start.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+    return `${diffMins} min`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/bookings/`, {
+          headers: getHeaders(),
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to load bookings');
+        }
+
+        const data = await res.json();
+        const formattedBookings: Booking[] = data.map((b: any) => ({
+          id: b.id,
+          customer: b.client_name || 'Unknown',
+          email: b.client_email || '',
+          service: b.service_name || 'N/A',
+          date: formatDate(b.starts_at),
+          time: formatTime(b.starts_at),
+          duration: formatDuration(b.starts_at, b.ends_at),
+          status: b.status.charAt(0).toUpperCase() + b.status.slice(1),
+          phone: b.client_phone || '',
+        }));
+
+        setBookings(formattedBookings);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load bookings');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -422,9 +171,30 @@ export default function BookingsPage() {
         </button>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          <span className="ml-3 text-gray-600">Loading bookings...</span>
+        </div>
+      )}
+
       {/* Mobile List */}
-      <div className="space-y-3 md:hidden my-2 sm:my-3 md:my-4">
-        {currentBookings.map((booking) => (
+      {!loading && (
+        <div className="space-y-3 md:hidden my-2 sm:my-3 md:my-4">
+          {currentBookings.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No bookings found</p>
+            </div>
+          ) : (
+            currentBookings.map((booking) => (
           <div
             key={booking.id}
             className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-3"
@@ -465,37 +235,47 @@ export default function BookingsPage() {
               </button>
             </div>
           </div>
-        ))}
-      </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Bookings Table - Desktop / Tablet */}
-      <div className="hidden md:block rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden my-2 sm:my-3 md:my-4">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">
-                  Service
-                </th>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Date & Time
-                </th>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">
-                  Duration
-                </th>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentBookings.map((booking) => (
+      {!loading && (
+        <div className="hidden md:block rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden my-2 sm:my-3 md:my-4">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden sm:table-cell">
+                    Service
+                  </th>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">
+                    Duration
+                  </th>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {currentBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 sm:px-6 md:px-8 py-12 text-center text-gray-500">
+                      No bookings found
+                    </td>
+                  </tr>
+                ) : (
+                  currentBookings.map((booking) => (
                 <tr
                   key={booking.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -539,12 +319,13 @@ export default function BookingsPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Pagination */}
+          {/* Pagination */}
         <div className="px-4 sm:px-6 md:px-8 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <p className="text-sm text-gray-700">
@@ -599,10 +380,12 @@ export default function BookingsPage() {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Pagination - Mobile (cards view) */}
-      <div className="md:hidden mt-3 flex flex-col gap-3">
+      {!loading && (
+        <div className="md:hidden mt-3 flex flex-col gap-3">
         <p className="text-xs text-gray-600 text-center">
           Showing <span className="font-medium">{filteredBookings.length === 0 ? 0 : startIndex + 1}</span> to{' '}
           <span className="font-medium">{Math.min(endIndex, filteredBookings.length)}</span> of{' '}
@@ -656,7 +439,8 @@ export default function BookingsPage() {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
