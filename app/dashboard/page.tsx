@@ -130,18 +130,41 @@ export default function DashboardPage() {
   // Sales per month (used for monthly sales view)
   const monthlySales = useMemo(
     () => [
-      { label: 'Jan', value: 32 },
-      { label: 'Feb', value: 45 },
-      { label: 'Mar', value: 51 },
-      { label: 'Apr', value: 62 },
-      { label: 'May', value: 70 },
-      { label: 'Jun', value: 78 },
-      { label: 'Jul', value: 82 },
-      { label: 'Aug', value: 90 },
-      { label: 'Sep', value: 88 },
-      { label: 'Oct', value: 93 },
-      { label: 'Nov', value: 97 },
-      { label: 'Dec', value: 100 },
+      { label: 'Jan', value: 12500 },
+      { label: 'Feb', value: 18200 },
+      { label: 'Mar', value: 21000 },
+      { label: 'Apr', value: 23500 },
+      { label: 'May', value: 26800 },
+      { label: 'Jun', value: 30100 },
+      { label: 'Jul', value: 32250 },
+      { label: 'Aug', value: 34500 },
+      { label: 'Sep', value: 33120 },
+      { label: 'Oct', value: 35980 },
+      { label: 'Nov', value: 37240 },
+      { label: 'Dec', value: 39850 },
+    ],
+    [],
+  );
+
+  const dailyRevenue = useMemo(
+    () => [
+      { label: 'Mon', value: 5200 },
+      { label: 'Tue', value: 6800 },
+      { label: 'Wed', value: 7400 },
+      { label: 'Thu', value: 8200 },
+      { label: 'Fri', value: 9100 },
+      { label: 'Sat', value: 4300 },
+      { label: 'Sun', value: 3100 },
+    ],
+    [],
+  );
+
+  const weeklyRevenue = useMemo(
+    () => [
+      { label: 'W1', value: 14500 },
+      { label: 'W2', value: 18800 },
+      { label: 'W3', value: 21900 },
+      { label: 'W4', value: 23650 },
     ],
     [],
   );
@@ -425,61 +448,51 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sales bar chart with hover tooltip */}
-        <div className="h-48 sm:h-56 md:h-64 lg:h-72 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-end">
-          <div className="flex w-full items-end gap-2 sm:gap-3 md:gap-4">
-            {(
-              salesRange === 'day'
-                ? [
-                    { label: 'Mon', value: 320 },
-                    { label: 'Tue', value: 410 },
-                    { label: 'Wed', value: 380 },
-                    { label: 'Thu', value: 450 },
-                    { label: 'Fri', value: 520 },
-                    { label: 'Sat', value: 290 },
-                    { label: 'Sun', value: 260 },
-                  ]
-                : salesRange === 'week'
-                ? [
-                    { label: 'W1', value: 1100 },
-                    { label: 'W2', value: 1380 },
-                    { label: 'W3', value: 1520 },
-                    { label: 'W4', value: 1675 },
-                  ]
-                : monthlySales
-            ).map((entry) => {
-              const dataset =
-                salesRange === 'month'
-                  ? monthlySales
-                  : salesRange === 'day'
-                  ? [
-                      320, 410, 380, 450, 520, 290, 260,
-                    ]
-                  : [1100, 1380, 1520, 1675];
-              const maxVal = Math.max(...dataset);
-              const height = (entry.value / maxVal) * 100;
-              return (
-                <div
-                  key={entry.label}
-                  className="group relative flex flex-1 flex-col items-center justify-end gap-1"
-                >
-                  <div className="relative flex w-full flex-1 items-end">
-                    <div
-                      className="w-full rounded-md bg-gradient-to-t from-[#1E1E5F] to-[#7B4FFF] shadow-sm"
-                      style={{ height: `${Math.max(height, 8)}%` }}
-                    />
-                    <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                      <span className="font-semibold">
-                        ${entry.value.toLocaleString()}
-                      </span>
+        {/* Sales bar chart with y-axis up to 40,000 */}
+        <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex">
+          {/* Y axis */}
+          <div className="mr-3 flex flex-col justify-between text-[10px] sm:text-xs text-gray-400">
+            {[40000, 30000, 20000, 10000, 0].map((tick) => (
+              <span key={tick}>${(tick / 1000).toFixed(0)}k</span>
+            ))}
+          </div>
+
+          {/* Bars */}
+          <div className="flex-1 flex items-end">
+            <div className="relative h-full w-full flex items-end gap-2 sm:gap-3 md:gap-4">
+              {(
+                salesRange === 'day'
+                  ? dailyRevenue
+                  : salesRange === 'week'
+                  ? weeklyRevenue
+                  : monthlySales
+              ).map((entry) => {
+                const maxY = 40000;
+                const clamped = Math.min(entry.value, maxY);
+                const height = (clamped / maxY) * 100;
+                return (
+                  <div
+                    key={entry.label}
+                    className="group relative flex-1 flex flex-col items-center justify-end gap-1"
+                  >
+                    <div className="relative h-full w-full flex items-end">
+                      <div
+                        className="w-full rounded-md bg-gradient-to-t from-[#1E1E5F] to-[#7B4FFF] shadow-sm"
+                        style={{ height: `${Math.max(height, 6)}%` }}
+                      />
+                      <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                        <span className="font-semibold">
+                          ${entry.value.toLocaleString()}
+                        </span>
+                      </div>
                     </div>
+                    <span className="text-[10px] sm:text-xs text-gray-500">
+                      {entry.label}
+                    </span>
                   </div>
-                  <span className="text-[10px] sm:text-xs text-gray-500">
-                    {entry.label}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
