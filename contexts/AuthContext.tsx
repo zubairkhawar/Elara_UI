@@ -11,6 +11,7 @@ interface User {
   business_type?: string;
   service_hours?: string;
   custom_service_hours?: string;
+  currency?: string;
 }
 
 interface AuthContextType {
@@ -41,6 +42,7 @@ interface ProfileUpdateData {
   business_type?: string;
   service_hours?: string;
   custom_service_hours?: string;
+  currency?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

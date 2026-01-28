@@ -341,10 +341,14 @@ export default function TopBar() {
                     <User className="w-4 h-4" />
                     <span className="text-sm">Edit profile</span>
                   </Link>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors">
+                  <Link
+                    href="/dashboard/account-settings"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
                     <Settings className="w-4 h-4" />
                     <span className="text-sm">Account settings</span>
-                  </button>
+                  </Link>
                   <button className="w-full flex items-center gap-3 px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors">
                     <Bell className="w-4 h-4" />
                     <span className="text-sm">Support</span>

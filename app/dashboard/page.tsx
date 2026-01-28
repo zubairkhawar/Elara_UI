@@ -73,6 +73,15 @@ export default function DashboardPage() {
   });
   const [revenueData, setRevenueData] = useState<Array<{ label: string; value: number }>>([]);
   const [bookingsGrid, setBookingsGrid] = useState<Array<Array<{ day: string; label: string; hasBooking: boolean }>>>([]);
+  const [userCurrency, setUserCurrency] = useState('USD');
+
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    USD: '$',
+    GBP: '£',
+    AED: 'د.إ',
+    SAR: '﷼',
+    PKR: '₨',
+  };
 
   const getHeaders = (): HeadersInit => {
     const headers: HeadersInit = {
@@ -87,6 +96,32 @@ export default function DashboardPage() {
     }
     return headers;
   };
+
+  // Fetch user data for currency preference
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('elara_access_token')
+          : null;
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/accounts/me/`, {
+          headers: getHeaders(),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setUserCurrency(data.currency || 'USD');
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   // Fetch dashboard stats
   useEffect(() => {
@@ -178,7 +213,8 @@ export default function DashboardPage() {
   };
 
   const formatCurrency = (amount: number): string => {
-    return `$${formatNumber(Math.round(amount))}`;
+    const symbol = CURRENCY_SYMBOLS[userCurrency] || '$';
+    return `${symbol}${formatNumber(Math.round(amount))}`;
   };
 
   const formatChange = (change: number): string => {
@@ -510,9 +546,14 @@ export default function DashboardPage() {
         <div className="h-56 sm:h-64 md:h-72 lg:h-80 bg-gray-50 rounded-xl border border-dashed border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex">
           {/* Y axis */}
           <div className="mr-3 flex flex-col justify-between text-[10px] sm:text-xs text-gray-400">
-            {[40000, 30000, 20000, 10000, 0].map((tick) => (
-              <span key={tick}>${(tick / 1000).toFixed(0)}k</span>
-            ))}
+            {[40000, 30000, 20000, 10000, 0].map((tick) => {
+              const symbol = CURRENCY_SYMBOLS[userCurrency] || '$';
+              return (
+                <span key={tick}>
+                  {symbol}{(tick / 1000).toFixed(0)}k
+                </span>
+              );
+            })}
           </div>
 
           {/* Bars */}
@@ -535,7 +576,7 @@ export default function DashboardPage() {
                       />
                       <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                         <span className="font-semibold">
-                          ${entry.value.toLocaleString()}
+                          {CURRENCY_SYMBOLS[userCurrency] || '$'}{entry.value.toLocaleString()}
                         </span>
                       </div>
                     </div>

@@ -54,6 +54,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     business_type = models.CharField(max_length=255, blank=True)
     service_hours = models.CharField(max_length=255, blank=True)
     custom_service_hours = models.CharField(max_length=512, blank=True)
+    
+    # Account settings
+    currency = models.CharField(max_length=8, default='USD', choices=[
+        ('USD', 'USD - US Dollar'),
+        ('GBP', 'GBP - British Pound'),
+        ('AED', 'AED - UAE Dirham'),
+        ('SAR', 'SAR - Saudi Riyal'),
+        ('PKR', 'PKR - Pakistani Rupee'),
+    ])
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

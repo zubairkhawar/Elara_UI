@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
             "business_type",
             "service_hours",
             "custom_service_hours",
+            "currency",
         ]
         # Email and id are not editable through the profile endpoint.
         read_only_fields = ["id", "email"]
