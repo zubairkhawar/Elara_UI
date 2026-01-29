@@ -132,4 +132,8 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 # Static files with WhiteNoise
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Vapi webhook: assign new call summaries to this user (by email) when no custom data is sent.
+# If unset, the first active user is used (single-tenant).
+VAPI_DEFAULT_OWNER_EMAIL = env("VAPI_DEFAULT_OWNER_EMAIL", default="")
+
 

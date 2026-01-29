@@ -9,5 +9,6 @@ urlpatterns = [
     path("api/v1/alerts/", include("notifications.urls")),
     path("api/v1/support/", include("support.urls")),
     path("api/v1/vapi/", include("integrations.vapi_urls")),
+    path("api/v1/call-summaries/", include("integrations.urls")),
 ]
 

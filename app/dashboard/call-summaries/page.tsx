@@ -1,37 +1,115 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, Filter, PhoneCall, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
-
-// In a real app this will come from the backend (e.g. Vapi webhooks -> Django).
-// For now we use static sample data with a structure that will scale.
-const MOCK_CALLS = Array.from({ length: 32 }).map((_, idx) => ({
-  id: idx + 1,
-  callerName: idx % 3 === 0 ? 'John Doe' : idx % 3 === 1 ? 'Jane Smith' : 'Walk-in Caller',
-  callerNumber: '+1 (555) 123-45' + String(idx).padStart(2, '0'),
-  service: idx % 2 === 0 ? 'Haircut' : 'Cleansing',
-  price: idx % 2 === 0 ? 20 : 30,
-  currency: 'USD',
-  createdAt: `2025-02-${(idx % 28) + 1} 14:${String((idx * 7) % 60).padStart(2, '0')}`,
-  durationMinutes: 3 + (idx % 10),
-  outcome: idx % 4 === 0 ? 'Booking created' : idx % 4 === 1 ? 'Rescheduled' : 'Lead captured',
-  summary:
-    idx % 2 === 0
-      ? 'Caller asked for a haircut slot next week. Elara confirmed availability and booked a 30-minute haircut on Tuesday at 3:00 PM.'
-      : 'Caller requested facial cleansing and pricing. Elara explained available cleansing packages and sent a follow-up confirmation SMS.',
-}));
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+type CallSummaryRow = {
+  id: number;
+  callerName: string;
+  callerNumber: string;
+  service: string;
+  price: number | null;
+  currency: string;
+  createdAt: string;
+  durationMinutes: number | null;
+  outcome: string;
+  summary: string;
+};
+
+function formatCallDate(iso: string | null): string {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export default function CallSummariesPage() {
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState<string | 'all'>('all');
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+  const [calls, setCalls] = useState<CallSummaryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  // Load services defined by the business so we can filter by them
+  const fetchCallSummaries = useCallback(async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('elara_access_token') : null;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set('search', search.trim());
+      if (selectedService !== 'all') params.set('service', selectedService);
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/call-summaries/?${params.toString()}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!res.ok) {
+        if (res.status === 401) return;
+        throw new Error('Failed to load call summaries');
+      }
+      const data = (await res.json()) as Array<{
+        id: number;
+        caller_name: string;
+        caller_number: string;
+        service_name: string;
+        price: string | null;
+        currency: string;
+        created_at: string;
+        duration_minutes: number | null;
+        outcome: string;
+        summary: string;
+      }>;
+      setCalls(
+        data.map((c) => ({
+          id: c.id,
+          callerName: c.caller_name || '—',
+          callerNumber: c.caller_number || '—',
+          service: c.service_name || '—',
+          price: c.price != null ? Number(c.price) : null,
+          currency: c.currency || 'USD',
+          createdAt: formatCallDate(c.created_at),
+          durationMinutes: c.duration_minutes ?? null,
+          outcome: c.outcome || '—',
+          summary: c.summary || '—',
+        }))
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
+      setCalls([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, selectedService]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    fetchCallSummaries();
+  }, [fetchCallSummaries]);
+
+  // Load services for filter chips
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const token = localStorage.getItem('elara_access_token');
@@ -47,35 +125,22 @@ export default function CallSummariesPage() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const names = (data as any[])
+        const names = (data as { name?: string }[])
           .map((s) => s.name as string)
           .filter(Boolean);
         setServiceOptions(Array.from(new Set(names)));
       } catch {
-        // Fail silently; filters will just not show dynamic options
+        // Fail silently
       }
     };
 
     loadServices();
   }, []);
 
-  const filtered = MOCK_CALLS.filter((call) => {
-    const matchesSearch =
-      !search ||
-      call.callerName.toLowerCase().includes(search.toLowerCase()) ||
-      call.callerNumber.toLowerCase().includes(search.toLowerCase()) ||
-      call.summary.toLowerCase().includes(search.toLowerCase());
-
-    const matchesService =
-      selectedService === 'all' ? true : call.service === selectedService;
-
-    return matchesSearch && matchesService;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(calls.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * pageSize;
-  const current = filtered.slice(startIndex, startIndex + pageSize);
+  const current = calls.slice(startIndex, startIndex + pageSize);
 
   const goToPage = (p: number) => {
     setPage(Math.max(1, Math.min(p, totalPages)));
@@ -93,6 +158,12 @@ export default function CallSummariesPage() {
           retained for the last 2 months to keep things fast and focused.
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 sm:gap-4 my-2 sm:my-3 md:my-4">
@@ -148,7 +219,11 @@ export default function CallSummariesPage() {
 
       {/* Mobile list */}
       <div className="space-y-3 md:hidden my-2 sm:my-3 md:my-4">
-        {current.map((call) => (
+        {loading ? (
+          <p className="text-sm text-gray-500 py-4">Loading call summaries…</p>
+        ) : current.length === 0 ? (
+          <p className="text-sm text-gray-500 py-4">No call summaries yet. They will appear here when Vapi sends end-of-call reports to your webhook.</p>
+        ) : current.map((call) => (
           <div
             key={call.id}
             className="rounded-xl bg-white border border-gray-200 shadow-sm p-4 flex flex-col gap-3"
@@ -174,8 +249,8 @@ export default function CallSummariesPage() {
             <p className="text-xs text-gray-500 flex items-center gap-1.5">
               <User className="w-3 h-3" />
               <span>
-                {call.service} — {call.price}
-                {call.currency === 'USD' && '$'}
+                {call.service}
+                {call.price != null && ` — ${call.price}${call.currency === 'USD' ? '$' : ` ${call.currency}`}`}
               </span>
             </p>
             <p className="text-sm text-gray-700 mt-1">{call.summary}</p>
@@ -210,7 +285,19 @@ export default function CallSummariesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {current.map((call) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
+                    Loading call summaries…
+                  </td>
+                </tr>
+              ) : current.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
+                    No call summaries yet. They will appear here when Vapi sends end-of-call reports to your webhook.
+                  </td>
+                </tr>
+              ) : current.map((call) => (
                 <tr key={call.id} className="align-top hover:bg-gray-50/60">
                   <td className="px-4 sm:px-6 md:px-8 py-4">
                     <div className="space-y-0.5">
@@ -229,8 +316,7 @@ export default function CallSummariesPage() {
                         {call.service}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {call.price}
-                        {call.currency === 'USD' && '$'}
+                        {call.price != null ? `${call.price}${call.currency === 'USD' ? '$' : ` ${call.currency}`}` : '—'}
                       </p>
                     </div>
                   </td>
@@ -241,7 +327,7 @@ export default function CallSummariesPage() {
                         <span>{call.createdAt}</span>
                       </div>
                       <p className="text-gray-500">
-                        Duration: {call.durationMinutes} min
+                        Duration: {call.durationMinutes != null ? `${call.durationMinutes} min` : '—'}
                       </p>
                     </div>
                   </td>
@@ -266,13 +352,13 @@ export default function CallSummariesPage() {
           <p className="text-xs sm:text-sm text-gray-600">
             Showing{' '}
             <span className="font-medium">
-              {filtered.length === 0 ? 0 : startIndex + 1}
+              {calls.length === 0 ? 0 : startIndex + 1}
             </span>{' '}
             to{' '}
             <span className="font-medium">
-              {Math.min(startIndex + pageSize, filtered.length)}
+              {Math.min(startIndex + pageSize, calls.length)}
             </span>{' '}
-            of <span className="font-medium">{filtered.length}</span> calls
+            of <span className="font-medium">{calls.length}</span> calls
           </p>
           <div className="flex items-center gap-1">
             <button

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from django.urls import path
 
-
-app_name = "integrations"
+from . import vapi_views
 
 urlpatterns: list = [
-    # Placeholder for voice API integration endpoints.
+    path("webhook/", vapi_views.vapi_webhook, name="webhook"),
 ]
 
