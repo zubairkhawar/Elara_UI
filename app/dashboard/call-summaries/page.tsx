@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Search, Filter, PhoneCall, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, PhoneCall, Clock, User, ChevronLeft, ChevronRight, FileText, X } from 'lucide-react';
 import { authenticatedFetch } from '@/utils/api';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+const DEBOUNCE_MS = 300;
 
 type CallSummaryRow = {
   id: number;
@@ -18,6 +20,7 @@ type CallSummaryRow = {
   durationMinutes: number | null;
   outcome: string;
   summary: string;
+  transcript: string;
 };
 
 function formatCallDate(iso: string | null): string {
@@ -38,13 +41,22 @@ function formatCallDate(iso: string | null): string {
 
 export default function CallSummariesPage() {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedService, setSelectedService] = useState<string | 'all'>('all');
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [calls, setCalls] = useState<CallSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [transcriptModal, setTranscriptModal] = useState<CallSummaryRow | null>(null);
   const pageSize = 10;
+
+  // Debounce search input (300ms)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const t = window.setTimeout(() => setDebouncedSearch(search), DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [search]);
 
   const fetchCallSummaries = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -52,7 +64,7 @@ export default function CallSummariesPage() {
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       if (selectedService !== 'all') params.set('service', selectedService);
       const res = await authenticatedFetch(
         `${API_BASE_URL}/api/v1/call-summaries/?${params.toString()}`
@@ -72,6 +84,7 @@ export default function CallSummariesPage() {
         duration_minutes: number | null;
         outcome: string;
         summary: string;
+        transcript: string;
       }>;
       setCalls(
         data.map((c) => ({
@@ -85,6 +98,7 @@ export default function CallSummariesPage() {
           durationMinutes: c.duration_minutes ?? null,
           outcome: c.outcome || '—',
           summary: c.summary || '—',
+          transcript: c.transcript || '',
         }))
       );
     } catch (e) {
@@ -93,7 +107,7 @@ export default function CallSummariesPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, selectedService]);
+  }, [debouncedSearch, selectedService]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -241,6 +255,14 @@ export default function CallSummariesPage() {
             <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-1 mt-1 inline-flex max-w-fit">
               {call.outcome}
             </p>
+            <button
+              type="button"
+              onClick={() => setTranscriptModal(call)}
+              className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-medium"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              View transcript
+            </button>
           </div>
         ))}
       </div>
@@ -266,18 +288,21 @@ export default function CallSummariesPage() {
                 <th className="px-4 sm:px-6 md:px-8 py-3 text-left font-semibold text-gray-600 w-2/5">
                   Summary
                 </th>
+                <th className="px-4 sm:px-6 md:px-8 py-3 text-left font-semibold text-gray-600">
+                  Transcript
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
                     Loading call summaries…
                   </td>
                 </tr>
               ) : current.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-4 sm:px-6 md:px-8 py-8 text-center text-sm text-gray-500">
                     No call summaries yet. They will appear here when Vapi sends end-of-call reports to your webhook.
                   </td>
                 </tr>
@@ -324,6 +349,16 @@ export default function CallSummariesPage() {
                     <p className="text-xs sm:text-sm text-gray-700 leading-snug line-clamp-3">
                       {call.summary}
                     </p>
+                  </td>
+                  <td className="px-4 sm:px-6 md:px-8 py-4">
+                    <button
+                      type="button"
+                      onClick={() => setTranscriptModal(call)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-medium transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      View transcript
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -393,6 +428,36 @@ export default function CallSummariesPage() {
           </div>
         </div>
       </div>
+
+      {/* Transcript modal */}
+      {transcriptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setTranscriptModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Call transcript — {transcriptModal.callerName}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setTranscriptModal(null)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {transcriptModal.transcript ? (
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                  {transcriptModal.transcript}
+                </pre>
+              ) : (
+                <p className="text-gray-500 text-sm">No transcript available for this call.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

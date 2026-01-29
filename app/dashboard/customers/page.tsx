@@ -28,6 +28,7 @@ interface Customer {
   bookingDetails: BookingDetail[];
   notes?: string;
   tags?: string;
+  created_at?: string;
 }
 
 export default function CustomersPage() {
@@ -143,6 +144,7 @@ export default function CustomersPage() {
               bookingDetails,
               notes: c.notes || '',
               tags: c.tags || '',
+              created_at: c.created_at,
             };
           })
         );
@@ -322,6 +324,14 @@ export default function CustomersPage() {
 
   const totalBookings = filteredCustomers.reduce((sum, c) => sum + c.bookings, 0);
 
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const newThisMonth = filteredCustomers.filter((c) => {
+    if (!c.created_at) return false;
+    const created = new Date(c.created_at);
+    return created >= startOfMonth;
+  }).length;
+
   return (
     <>
       <div className="space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8">
@@ -356,7 +366,7 @@ export default function CustomersPage() {
               <User className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">New This Month</h3>
             </div>
-            <p className="text-3xl sm:text-4xl font-bold text-gray-900">12</p>
+            <p className="text-3xl sm:text-4xl font-bold text-gray-900">{newThisMonth}</p>
           </div>
         </div>
 

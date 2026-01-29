@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import json
+import logging
+
 from django.db.models import Q
+from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .models import Alert
 from .serializers import AlertSerializer
+from .stream import register_queue, unregister_queue
+
+logger = logging.getLogger(__name__)
 
 
 class AlertViewSet(viewsets.ReadOnlyModelViewSet):
@@ -67,3 +74,59 @@ class AlertViewSet(viewsets.ReadOnlyModelViewSet):
             is_read=False,
         ).count()
         return Response({'count': count})
+
+
+def _get_user_from_token(access_token: str):
+    """Validate JWT and return User or None."""
+    from rest_framework_simplejwt.tokens import AccessToken
+    from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+    if not access_token:
+        return None
+    try:
+        token = AccessToken(access_token)
+        user_id = token.get("user_id")
+        if not user_id:
+            return None
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        return User.objects.filter(pk=user_id, is_active=True).first()
+    except (InvalidToken, TokenError):
+        return None
+
+
+def _event_stream(user_id: int):
+    """Generator yielding SSE events (new alerts or heartbeat)."""
+    import queue
+    q = register_queue(user_id)
+    try:
+        while True:
+            try:
+                payload = q.get(timeout=30)
+                yield f"data: {json.dumps(payload)}\n\n"
+            except queue.Empty:
+                yield ": heartbeat\n\n"
+    except GeneratorExit:
+        pass
+    finally:
+        unregister_queue(user_id, q)
+
+
+@api_view(["GET"])
+@permission_classes([])
+def alerts_stream(request: Request) -> HttpResponse:
+    """
+    Server-Sent Events stream for live alerts.
+    Requires ?access_token=<jwt> (EventSource does not send custom headers).
+    """
+    access_token = request.GET.get("access_token") or request.GET.get("token")
+    user = _get_user_from_token(access_token)
+    if not user:
+        return HttpResponse(status=401)
+    response = StreamingHttpResponse(
+        _event_stream(user.id),
+        content_type="text/event-stream",
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response

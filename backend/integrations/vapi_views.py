@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -16,6 +17,64 @@ from .models import CallSummary
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+def _normalize_phone(phone: str) -> str:
+    """Strip to digits (and leading +) for matching."""
+    if not phone:
+        return ""
+    return re.sub(r"[^\d+]", "", phone.strip())
+
+
+def _link_call_summary_to_booking_and_client(instance: CallSummary) -> None:
+    """
+    Try to set related_client and related_booking on a CallSummary by matching
+    caller phone to a Client and then finding a recent Booking for that client.
+    """
+    caller = (_normalize_phone(instance.caller_number) or "").strip()
+    if not caller:
+        return
+    owner = instance.owner_id
+    # Find client by owner and phone (normalize client phone for comparison)
+    from clients.models import Client
+    from bookings.models import Booking
+
+    clients = list(
+        Client.objects.filter(owner_id=owner).only("id", "phone_number")
+    )
+    related_client = None
+    for c in clients:
+        if _normalize_phone(c.phone_number) and caller in _normalize_phone(c.phone_number):
+            related_client = c
+            break
+        if _normalize_phone(c.phone_number) and _normalize_phone(c.phone_number) in caller:
+            related_client = c
+            break
+    if not related_client:
+        return
+    instance.related_client_id = related_client.id
+    # Find a booking for this client created around the call end time
+    call_time = instance.ended_at or instance.created_at
+    if not call_time:
+        instance.save(update_fields=["related_client_id"])
+        return
+    if timezone.is_naive(call_time):
+        call_time = timezone.make_aware(call_time)
+    window_start = call_time - timedelta(minutes=15)
+    window_end = call_time + timedelta(minutes=2)
+    booking = (
+        Booking.objects.filter(
+            owner_id=owner,
+            client_id=related_client.id,
+            created_at__gte=window_start,
+            created_at__lte=window_end,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    if booking:
+        instance.related_booking_id = booking.id
+    instance.save(update_fields=["related_client_id", "related_booking_id"])
 
 
 def _get_webhook_owner():
@@ -136,9 +195,10 @@ def vapi_webhook(request):
             instance.price = price
         instance.currency = currency or instance.currency
         instance.save()
+        _link_call_summary_to_booking_and_client(instance)
         return JsonResponse({"ok": True, "action": "updated", "id": instance.id})
 
-    CallSummary.objects.create(
+    instance = CallSummary.objects.create(
         owner=owner,
         vapi_call_id=call_id or None,
         caller_name=caller_name,
@@ -153,4 +213,5 @@ def vapi_webhook(request):
         started_at=started_at,
         ended_at=ended_at,
     )
+    _link_call_summary_to_booking_and_client(instance)
     return JsonResponse({"ok": True, "action": "created"})

@@ -61,23 +61,38 @@ export default function AlertsPage() {
   };
 
   useEffect(() => {
-    let interval: number | undefined;
+    fetchAlerts();
+  }, [filter]);
 
-    const load = async () => {
-      await fetchAlerts();
-    };
+  // Real-time: Server-Sent Events for new alerts
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('elara_access_token');
+    if (!token) return;
 
-    load();
-    if (typeof window !== 'undefined') {
-      interval = window.setInterval(() => fetchAlerts(false), 60000);
-    }
+    const url = `${API_BASE_URL}/api/v1/alerts/stream/?access_token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url);
 
-    return () => {
-      if (interval !== undefined && typeof window !== 'undefined') {
-        window.clearInterval(interval);
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data && typeof data.id === 'number') {
+          setAlerts((prev) => [data, ...prev.filter((a) => a.id !== data.id)]);
+          toast.info(data.title || 'New alert');
+        }
+      } catch {
+        // ignore parse errors
       }
     };
-  }, [filter]);
+
+    es.onerror = () => {
+      es.close();
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [toast]);
 
   const handleMarkAsRead = async (alertId: number) => {
     setMarkingRead(alertId);
