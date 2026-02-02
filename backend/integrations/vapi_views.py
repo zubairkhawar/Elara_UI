@@ -26,53 +26,105 @@ def _normalize_phone(phone: str) -> str:
     return re.sub(r"[^\d+]", "", phone.strip())
 
 
+def _create_alert_for_call_summary(instance: CallSummary) -> None:
+    """Create an Alert so the user sees the new call in Alerts and dashboard. Never raises."""
+    try:
+        from notifications.models import Alert
+        title = "New call"
+        message = (instance.summary or "").strip() or f"Call from {instance.caller_name or instance.caller_number or 'Unknown'}"
+        if len(message) > 500:
+            message = message[:497] + "..."
+        Alert.objects.create(
+            owner_id=instance.owner_id,
+            type="info",
+            title=title,
+            message=message,
+            related_client_id=instance.related_client_id,
+            related_booking_id=instance.related_booking_id,
+        )
+    except Exception as e:
+        logger.exception("Vapi webhook: create_alert_for_call_summary failed: %s", e)
+
+
 def _link_call_summary_to_booking_and_client(instance: CallSummary) -> None:
     """
     Try to set related_client and related_booking on a CallSummary by matching
-    caller phone to a Client and then finding a recent Booking for that client.
-    Never raises; logs and returns on any error so webhook response is not broken.
+    caller phone to a Client (or creating a new Client if no match), then
+    finding or creating a Booking. Never raises; logs and returns on any error.
     """
     try:
-        caller = (_normalize_phone(instance.caller_number) or "").strip()
-        if not caller:
-            return
-        owner = instance.owner_id
+        owner_id = instance.owner_id
         from clients.models import Client
-        from bookings.models import Booking
+        from bookings.models import Booking, Service
 
-        clients = list(
-            Client.objects.filter(owner_id=owner).only("id", "phone_number")
-        )
+        caller = (_normalize_phone(instance.caller_number) or "").strip()
+        caller_name = (instance.caller_name or "").strip() or "Caller"
+
+        # Find or create Client
         related_client = None
-        for c in clients:
-            if _normalize_phone(c.phone_number) and caller in _normalize_phone(c.phone_number):
-                related_client = c
-                break
-            if _normalize_phone(c.phone_number) and _normalize_phone(c.phone_number) in caller:
-                related_client = c
-                break
+        if caller:
+            clients = list(
+                Client.objects.filter(owner_id=owner_id).only("id", "phone_number")
+            )
+            for c in clients:
+                if _normalize_phone(c.phone_number) and caller in _normalize_phone(c.phone_number):
+                    related_client = c
+                    break
+                if _normalize_phone(c.phone_number) and _normalize_phone(c.phone_number) in caller:
+                    related_client = c
+                    break
+        if not related_client and (instance.caller_name or instance.caller_number):
+            # New caller → create Client so they appear in Customers
+            related_client = Client.objects.create(
+                owner_id=owner_id,
+                name=caller_name,
+                phone_number=instance.caller_number or "",
+                email="",
+            )
         if not related_client:
             return
         instance.related_client_id = related_client.id
+
+        # Find existing booking around call time, or create one from the call
         call_time = instance.ended_at or instance.created_at
-        if not call_time:
-            instance.save(update_fields=["related_client_id"])
-            return
-        if timezone.is_naive(call_time):
+        if call_time and timezone.is_naive(call_time):
             call_time = timezone.make_aware(call_time)
-        window_start = call_time - timedelta(minutes=15)
-        window_end = call_time + timedelta(minutes=2)
-        booking = (
-            Booking.objects.filter(
-                owner_id=owner,
-                client_id=related_client.id,
-                created_at__gte=window_start,
-                created_at__lte=window_end,
+        if call_time:
+            window_start = call_time - timedelta(minutes=15)
+            window_end = call_time + timedelta(minutes=2)
+            booking = (
+                Booking.objects.filter(
+                    owner_id=owner_id,
+                    client_id=related_client.id,
+                    created_at__gte=window_start,
+                    created_at__lte=window_end,
+                )
+                .order_by("-created_at")
+                .first()
             )
-            .order_by("-created_at")
-            .first()
-        )
-        if booking:
+            if booking:
+                instance.related_booking_id = booking.id
+        if not instance.related_booking_id and instance.service_name:
+            # Create a placeholder booking from the call so it shows on Bookings page
+            service = (
+                Service.objects.filter(owner_id=owner_id, name__iexact=instance.service_name.strip())
+                .first()
+                or Service.objects.filter(owner_id=owner_id, is_active=True).first()
+            )
+            start = (call_time or timezone.now()) + timedelta(days=1)
+            start = start.replace(hour=9, minute=0, second=0, microsecond=0)
+            if timezone.is_naive(start):
+                start = timezone.make_aware(start)
+            end = start + timedelta(hours=1)
+            booking = Booking.objects.create(
+                owner_id=owner_id,
+                client_id=related_client.id,
+                service_id=service.id if service else None,
+                starts_at=start,
+                ends_at=end,
+                status="pending",
+                notes=f"From voice call: {(instance.summary or '')[:500]}",
+            )
             instance.related_booking_id = booking.id
         instance.save(update_fields=["related_client_id", "related_booking_id"])
     except Exception as e:
@@ -213,6 +265,7 @@ def _process_vapi_webhook(request, owner: User) -> JsonResponse:
         ended_at=ended_at,
     )
     _link_call_summary_to_booking_and_client(instance)
+    _create_alert_for_call_summary(instance)
     logger.info("Vapi webhook: CallSummary created id=%s", instance.id)
     return JsonResponse({"ok": True, "action": "created"})
 
