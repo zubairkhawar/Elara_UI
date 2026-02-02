@@ -70,7 +70,11 @@ export default function CallSummariesPage() {
         `${API_BASE_URL}/api/v1/call-summaries/?${params.toString()}`
       );
       if (!res.ok) {
-        if (res.status === 401) return;
+        if (res.status === 401) {
+          setError('Session expired. Please log in again.');
+          setCalls([]);
+          return;
+        }
         throw new Error('Failed to load call summaries');
       }
       const data = (await res.json()) as Array<{

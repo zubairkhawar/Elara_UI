@@ -189,7 +189,13 @@ def _process_vapi_webhook(request, owner: User) -> JsonResponse:
         instance.currency = currency or instance.currency
         instance.save()
         _link_call_summary_to_booking_and_client(instance)
+        logger.info("Vapi webhook: CallSummary updated id=%s", instance.id)
         return JsonResponse({"ok": True, "action": "updated", "id": instance.id})
+
+    # Avoid creating a new row for every Vapi ping when there's no call_id and no real content
+    if not call_id and not transcript.strip() and not summary_text.strip():
+        logger.info("Vapi webhook: skipped create (no call_id and no transcript/summary)")
+        return JsonResponse({"ok": True, "action": "skipped"})
 
     instance = CallSummary.objects.create(
         owner=owner,
@@ -207,6 +213,7 @@ def _process_vapi_webhook(request, owner: User) -> JsonResponse:
         ended_at=ended_at,
     )
     _link_call_summary_to_booking_and_client(instance)
+    logger.info("Vapi webhook: CallSummary created id=%s", instance.id)
     return JsonResponse({"ok": True, "action": "created"})
 
 
@@ -232,6 +239,7 @@ def vapi_webhook_by_token(request, token: str):
     Resolve the client (User) by vapi_webhook_token and create/update CallSummary for that user.
     Use this URL when configuring each Vapi agent (one agent per client).
     """
+    logger.info("Vapi webhook received: POST /api/v1/vapi/webhook/<token>/ (token=%s)", token[:8] + "...")
     try:
         owner = User.objects.filter(
             vapi_webhook_token=token.strip(),

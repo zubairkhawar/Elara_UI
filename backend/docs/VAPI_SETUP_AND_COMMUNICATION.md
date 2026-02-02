@@ -8,17 +8,25 @@ One guide for Vapi settings, Django admin, and ensuring your backend receives ca
 
 ### Server URL (required for communication)
 
-- In **Vapi** → **Phone Numbers** → open the number (e.g. +1 272 235 0282).
-- **Server URL** must be your **full webhook URL**:
-  - **`https://elara-ai-backend.onrender.com/api/v1/vapi/webhook/_au-u6TlPIyrZhP0gkCT2IukCPz_gJno8BAsAaU7u3I/`**
-- Replace the token with the user’s **Vapi webhook token** from Django admin if you use a different user.
-- **Timeout:** 20 seconds is fine.
-- **Authorization / HTTP Headers:** Leave empty unless you add auth later.
+Set the **same webhook URL** in **both** places so **phone calls** and **dashboard “Talk to assistant” test calls** both send the end-of-call-report to your app.
+
+**Webhook URL:**  
+**`https://elara-ai-backend.onrender.com/api/v1/vapi/webhook/_au-u6TlPIyrZhP0gkCT2IukCPz_gJno8BAsAaU7u3I/`**
+
+- **Assistant** (so test calls from the dashboard create Call summaries):
+  - **Vapi** → **Assistants** → open your assistant (e.g. Apex Plumbing Co.).
+  - Find **Server URL** / **Webhook URL** and set it to the URL above.
+  - In **Server Messages** / **Message types** / **Events**, include **end-of-call-report**.
+- **Phone Number** (so real phone calls create Call summaries):
+  - **Vapi** → **Phone Numbers** → open the number (e.g. +1 272 235 0282).
+  - **Server URL** = same URL above.
+  - **Timeout:** 20 seconds. **Authorization:** leave empty unless you add auth later.
+
+Replace the token with the user’s **Vapi webhook token** from Django admin if you use a different user.
 
 ### End-of-call report (required)
 
-- Ensure the assistant or phone number sends **end-of-call-report** (or equivalent) to the Server URL when a call ends.
-- In Vapi: **Server Messages** / **Message types** / **Events** — include **end-of-call-report** so your backend gets transcript, summary, caller, and outcome.
+- On **both** the Assistant and the Phone Number: **Server Messages** / **Message types** / **Events** — include **end-of-call-report** so your backend gets transcript, summary, caller, and outcome.
 
 ### Inbound settings
 
@@ -87,6 +95,18 @@ curl -X POST "$BASE/api/v1/vapi/webhook/$TOKEN/" \
 1. **App:** Log in → **Dashboard → Call summaries**. You should see the call (transcript/summary may appear shortly after hangup).
 2. **Admin:** **https://elara-ai-backend.onrender.com/admin/** — if CallSummary is registered, you’ll see it there too.
 3. **Vapi:** Call appears in Vapi dashboard; Server URL is used for end-of-call-report.
+
+### How to check if Vapi sent data to your server
+
+1. **Render logs**  
+   - Go to **Render** → your backend service → **Logs**.  
+   - End a test call in Vapi, then look in the logs around that time for:
+     - **`Vapi webhook received: POST /api/v1/vapi/webhook/<token>/`** — your server got a POST from Vapi.  
+     - **`Vapi webhook: CallSummary created id=...`** or **`CallSummary updated id=...`** — the backend processed it and saved a row.  
+   - If you see **no** “Vapi webhook received” line when you end the call, Vapi did **not** send the end-of-call-report to your URL. Check in Vapi: Assistant (and Phone Number) **Server URL** and **end-of-call-report** in Server Messages.
+
+2. **Confirm backend with curl**  
+   Run the curl command above. If you get `{"ok": true, "action": "created"}` and a new row in Call summaries, the backend is fine; the issue is Vapi not calling your URL (wrong URL or end-of-call-report not enabled).
 
 ### Troubleshooting
 
