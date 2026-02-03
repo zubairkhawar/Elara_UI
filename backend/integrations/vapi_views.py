@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import CallSummary
+from .summary_utils import infer_from_summary
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -225,6 +226,25 @@ def _process_vapi_webhook(request, owner: User) -> JsonResponse:
         except (TypeError, ValueError):
             price = None
     currency = (payload.get("currency") or "USD")[:8]
+
+    # When Vapi doesn't send caller/service/outcome, infer from summary so UI shows them
+    if summary_text:
+        inferred = infer_from_summary(summary_text)
+        if inferred:
+            if not caller_name and inferred.get("caller_name"):
+                caller_name = inferred["caller_name"]
+            if not service_name and inferred.get("service_name"):
+                service_name = inferred["service_name"]
+            if not outcome and inferred.get("outcome"):
+                outcome = inferred["outcome"]
+
+    # Duration: use from payload or compute from started_at/ended_at
+    if duration_seconds is None and started_at and ended_at:
+        try:
+            delta = ended_at - started_at
+            duration_seconds = max(0, int(delta.total_seconds()))
+        except (TypeError, ValueError):
+            pass
 
     if instance:
         instance.transcript = transcript or instance.transcript
