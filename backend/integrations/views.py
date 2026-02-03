@@ -16,7 +16,7 @@ class CallSummaryViewSet(viewsets.ModelViewSet):
 
     serializer_class = CallSummarySerializer
     permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ["get", "delete", "head", "options"]
+    http_method_names = ["get", "post", "delete", "head", "options"]
 
     def get_queryset(self):
         queryset = CallSummary.objects.filter(owner=self.request.user).order_by(
