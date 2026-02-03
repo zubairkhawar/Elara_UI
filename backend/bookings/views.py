@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
@@ -204,45 +205,48 @@ class BookingViewSet(viewsets.ModelViewSet):
             week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
         
         week_end = week_start + timedelta(days=7)
-        week_start_dt = timezone.make_aware(datetime.combine(week_start, datetime.min.time()))
-        week_end_dt = timezone.make_aware(datetime.combine(week_end, datetime.min.time()))
+        # Use client timezone so slots and labels match user's local time (e.g. 2 PM shows as 2 PM)
+        tz_str = request.query_params.get('tz') or 'UTC'
+        try:
+            tz = ZoneInfo(tz_str)
+        except Exception:
+            tz = ZoneInfo('UTC')
+        week_start_dt = datetime.combine(week_start, time.min).replace(tzinfo=tz).astimezone(timezone.utc)
+        week_end_dt = datetime.combine(week_end, time.min).replace(tzinfo=tz).astimezone(timezone.utc)
 
-        # Get all bookings for this week
+        # Only confirmed bookings show as occupied; cancelled/deleted free the slot
         bookings = Booking.objects.filter(
             owner=user,
+            status='confirmed',
             starts_at__gte=week_start_dt,
             starts_at__lt=week_end_dt
         ).select_related('client', 'service')
 
-        # Create a 7x48 grid (7 days, 48 time slots of 30 minutes)
+        # Build 7x48 grid: each slot is (day, time of day) in user's timezone
         week_days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         grid = []
-        
         for day_idx in range(7):
             day_date = week_start + timedelta(days=day_idx)
             day_row = []
-            
             for slot_idx in range(48):
                 hours = slot_idx // 2
                 minutes = (slot_idx % 2) * 30
-                slot_time = datetime.combine(day_date, datetime.min.time().replace(hour=hours, minute=minutes))
-                slot_start = timezone.make_aware(slot_time)
-                slot_end = slot_start + timedelta(minutes=30)
-                
-                # Check if there's a booking in this time slot
+                slot_start_local = datetime.combine(
+                    day_date, time(hour=hours, minute=minutes, second=0, microsecond=0)
+                ).replace(tzinfo=tz)
+                slot_end_local = slot_start_local + timedelta(minutes=30)
+                slot_start_utc = slot_start_local.astimezone(timezone.utc)
+                slot_end_utc = slot_end_local.astimezone(timezone.utc)
                 has_booking = bookings.filter(
-                    starts_at__gte=slot_start,
-                    starts_at__lt=slot_end
+                    starts_at__lt=slot_end_utc,
+                    ends_at__gt=slot_start_utc
                 ).exists()
-                
                 day_row.append({
                     'day': week_days[day_idx],
                     'label': f'{hours:02d}:{minutes:02d}',
                     'hasBooking': has_booking
                 })
-            
             grid.append(day_row)
-        
         return Response({
             'week_start': week_start_str or week_start.isoformat(),
             'grid': grid
@@ -292,11 +296,11 @@ class BookingViewSet(viewsets.ModelViewSet):
             datetime.combine(day, datetime.min.time().replace(hour=end_hour, minute=0, second=0, microsecond=0))
         )
 
-        # Bookings on this day that overlap the day range (any overlap)
+        # Only confirmed bookings occupy a slot; cancelled/deleted free the slot
         existing = list(
             Booking.objects.filter(
                 owner=user,
-                status__in=('pending', 'confirmed'),
+                status='confirmed',
                 starts_at__lt=day_end,
                 ends_at__gt=day_start,
             ).values_list('starts_at', 'ends_at')

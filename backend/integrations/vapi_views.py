@@ -144,7 +144,7 @@ def _link_call_summary_to_booking_and_client(instance: CallSummary) -> None:
                 service_id=service.id if service else None,
                 starts_at=start,
                 ends_at=end,
-                status="pending",
+                status="confirmed",
                 notes=f"From voice call: {(instance.summary or '')[:500]}",
             )
             instance.related_booking_id = booking.id

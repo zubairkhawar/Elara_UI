@@ -203,7 +203,7 @@ export default function DashboardPage() {
     };
   }, [salesRange]);
 
-  // Fetch bookings heatmap when week changes
+  // Fetch bookings heatmap when week changes (pass user timezone so 2 PM shows as 2 PM)
   useEffect(() => {
     const fetchHeatmap = async () => {
       const token =
@@ -212,9 +212,15 @@ export default function DashboardPage() {
           : null;
       if (!token || !selectedDate) return;
 
+      const tz =
+        typeof Intl !== 'undefined' && Intl.DateTimeFormat?.().resolvedOptions?.().timeZone
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : 'UTC';
+      const tzParam = tz ? `&tz=${encodeURIComponent(tz)}` : '';
+
       try {
         const res = await fetch(
-          `${API_BASE_URL}/api/v1/bookings/heatmap/?week_start=${selectedDate}`,
+          `${API_BASE_URL}/api/v1/bookings/heatmap/?week_start=${selectedDate}${tzParam}`,
           { headers: getHeaders() }
         );
 
