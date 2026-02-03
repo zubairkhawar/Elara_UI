@@ -248,6 +248,78 @@ class BookingViewSet(viewsets.ModelViewSet):
             'grid': grid
         })
 
+    @action(detail=False, methods=['get'])
+    def available_slots(self, request):
+        """
+        Return time slots for a given date that are not occupied by any booking.
+        Used by the voice agent to avoid double-booking when offering times.
+
+        Query params:
+          date: YYYY-MM-DD (required)
+          slot_minutes: slot length in minutes (default 30)
+          start_hour: first hour of day to consider (default 8)
+          end_hour: last hour (exclusive) to consider (default 18)
+
+        Response: { "date": "YYYY-MM-DD", "slots": ["09:00", "09:30", ...] }
+        """
+        user = request.user
+        date_str = request.query_params.get('date')
+        if not date_str:
+            return Response(
+                {'error': 'Query param "date" (YYYY-MM-DD) is required'},
+                status=400,
+            )
+        try:
+            day = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date; use YYYY-MM-DD'},
+                status=400,
+            )
+        slot_minutes = int(request.query_params.get('slot_minutes') or 30)
+        start_hour = int(request.query_params.get('start_hour') or 8)
+        end_hour = int(request.query_params.get('end_hour') or 18)
+        if slot_minutes <= 0 or start_hour < 0 or end_hour <= start_hour:
+            return Response(
+                {'error': 'Invalid slot_minutes/start_hour/end_hour'},
+                status=400,
+            )
+
+        day_start = timezone.make_aware(
+            datetime.combine(day, datetime.min.time().replace(hour=start_hour, minute=0, second=0, microsecond=0))
+        )
+        day_end = timezone.make_aware(
+            datetime.combine(day, datetime.min.time().replace(hour=end_hour, minute=0, second=0, microsecond=0))
+        )
+
+        # Bookings on this day that overlap the day range (any overlap)
+        existing = list(
+            Booking.objects.filter(
+                owner=user,
+                status__in=('pending', 'confirmed'),
+                starts_at__lt=day_end,
+                ends_at__gt=day_start,
+            ).values_list('starts_at', 'ends_at')
+        )
+
+        slots = []
+        slot_start = day_start
+        while slot_start < day_end:
+            slot_end = slot_start + timedelta(minutes=slot_minutes)
+            # Slot is free if no existing booking overlaps [slot_start, slot_end)
+            occupied = any(
+                start < slot_end and end > slot_start
+                for start, end in existing
+            )
+            if not occupied:
+                slots.append(slot_start.strftime('%H:%M'))
+            slot_start = slot_end
+
+        return Response({
+            'date': date_str,
+            'slots': slots,
+        })
+
     def _calculate_percentage_change(self, old_value, new_value):
         """Calculate percentage change between two values."""
         if old_value == 0:

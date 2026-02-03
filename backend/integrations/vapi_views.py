@@ -27,6 +27,26 @@ def _normalize_phone(phone: str) -> str:
     return re.sub(r"[^\d+]", "", phone.strip())
 
 
+def _resolve_service_from_call_description(owner_id: int, call_service_name: str):
+    """
+    When call summary says e.g. 'leak repair in sink', match to a Service
+    whose name appears in that text (e.g. 'Leak repair'). Prefer longest match.
+    """
+    from bookings.models import Service
+    if not call_service_name:
+        return None
+    lower_desc = call_service_name.lower()
+    candidates = list(
+        Service.objects.filter(owner_id=owner_id, is_active=True).values_list("id", "name")
+    )
+    matches = [(sid, name) for sid, name in candidates if name and name.lower() in lower_desc]
+    if not matches:
+        return None
+    # Prefer longest service name match (e.g. "Leak repair in sink" over "Leak")
+    best = max(matches, key=lambda x: len(x[1]))
+    return Service.objects.filter(id=best[0]).first()
+
+
 def _create_alert_for_call_summary(instance: CallSummary) -> None:
     """Create an Alert so the user sees the new call in Alerts and dashboard. Never raises."""
     try:
@@ -107,9 +127,10 @@ def _link_call_summary_to_booking_and_client(instance: CallSummary) -> None:
                 instance.related_booking_id = booking.id
         if not instance.related_booking_id and instance.service_name:
             # Create a placeholder booking from the call so it shows on Bookings page
+            raw_name = instance.service_name.strip()
             service = (
-                Service.objects.filter(owner_id=owner_id, name__iexact=instance.service_name.strip())
-                .first()
+                Service.objects.filter(owner_id=owner_id, name__iexact=raw_name).first()
+                or _resolve_service_from_call_description(owner_id, raw_name)
                 or Service.objects.filter(owner_id=owner_id, is_active=True).first()
             )
             start = (call_time or timezone.now()) + timedelta(days=1)

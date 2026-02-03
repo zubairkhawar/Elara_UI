@@ -133,8 +133,23 @@ Then check **Dashboard → Call summaries** (and admin) for the new call.
 
 ---
 
+## 5. Checking availability during the call (optional)
+
+So the agent only offers times that are not already booked, the backend exposes an **available-slots** API:
+
+- **URL:** `GET https://elara-ai-backend.onrender.com/api/v1/bookings/available_slots/?date=YYYY-MM-DD`
+- **Auth:** Bearer token (same as dashboard; the agent must call with the business owner’s token or a server-side token for that user).
+- **Response:** `{ "date": "2025-02-05", "slots": ["09:00", "09:30", "10:00", ...] }` — only slots with no existing booking.
+
+Optional query params: `slot_minutes=30`, `start_hour=8`, `end_hour=18` (defaults: 30-min slots, 8am–6pm).
+
+Configure your Vapi assistant to call this URL when the caller asks for availability or picks a date (e.g. via a Server URL / function that runs during the call and returns the list of free slots).
+
+---
+
 ## Summary
 
 1. **Vapi:** Server URL = `https://elara-ai-backend.onrender.com/api/v1/vapi/webhook/<token>/`; enable end-of-call-report; assign assistant to phone number.
 2. **Admin:** **https://elara-ai-backend.onrender.com/admin/** — set per-user token (generate if needed), optional assistant ID and phone, setup status.
 3. **Communication:** Test with the curl command; after a real call, verify Call summaries in the app and admin; use the troubleshooting table if something fails.
+4. **Availability:** Use `GET .../api/v1/bookings/available_slots/?date=YYYY-MM-DD` (with auth) so the agent only offers free slots.
