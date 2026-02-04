@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Search, Filter, PhoneCall, Clock, User, ChevronLeft, ChevronRight, FileText, X, Trash2 } from 'lucide-react';
+import { Search, PhoneCall, Clock, User, ChevronLeft, ChevronRight, FileText, X, Trash2 } from 'lucide-react';
 import { authenticatedFetch } from '@/utils/api';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -44,8 +44,6 @@ export default function CallSummariesPage() {
   const toast = useToast();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedService, setSelectedService] = useState<string | 'all'>('all');
-  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [calls, setCalls] = useState<CallSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +69,6 @@ export default function CallSummariesPage() {
     try {
       const params = new URLSearchParams();
       if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-      if (selectedService !== 'all') params.set('service', selectedService);
       const res = await authenticatedFetch(
         `${API_BASE_URL}/api/v1/call-summaries/?${params.toString()}`
       );
@@ -117,7 +114,7 @@ export default function CallSummariesPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, selectedService]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -134,27 +131,6 @@ export default function CallSummariesPage() {
       window.clearInterval(interval);
     };
   }, [fetchCallSummaries]);
-
-  // Load services for filter chips
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const loadServices = async () => {
-      try {
-        const res = await authenticatedFetch(`${API_BASE_URL}/api/v1/bookings/services/`);
-        if (!res.ok) return;
-        const data = await res.json();
-        const names = (data as { name?: string }[])
-          .map((s) => s.name as string)
-          .filter(Boolean);
-        setServiceOptions(Array.from(new Set(names)));
-      } catch {
-        // Fail silently
-      }
-    };
-
-    loadServices();
-  }, []);
 
   const handleDeleteAll = useCallback(async () => {
     setDeleteAllPending(true);
@@ -225,7 +201,7 @@ export default function CallSummariesPage() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 my-2 sm:my-3 md:my-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 my-2 sm:my-3 md:my-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
           <input
@@ -239,52 +215,15 @@ export default function CallSummariesPage() {
             className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 rounded-lg bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-sm sm:text-base"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex gap-2 overflow-x-auto pb-1 flex-1 min-w-0">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedService('all');
-                setSearch('');
-                setPage(1);
-              }}
-              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                selectedService === 'all'
-                  ? 'bg-purple-600 text-white border-purple-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              All
-            </button>
-            {serviceOptions.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => {
-                  setSelectedService(name);
-                  setPage(1);
-                }}
-                className={`hidden sm:inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                  selectedService === name
-                    ? 'bg-purple-600 text-white border-purple-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setDeleteAllConfirmOpen(true)}
-            disabled={calls.length === 0}
-            className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs sm:text-sm font-medium hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete all transcripts
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setDeleteAllConfirmOpen(true)}
+          disabled={calls.length === 0}
+          className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs sm:text-sm font-medium hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete all transcripts
+        </button>
       </div>
 
       {/* Mobile list */}
