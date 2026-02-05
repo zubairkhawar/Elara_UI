@@ -44,7 +44,7 @@ export default function ServicesPage() {
 
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [userCurrency, setUserCurrency] = useState('USD');
+  const [userCurrency, setUserCurrency] = useState(() => (user?.currency && CURRENCY_SYMBOLS[user.currency] != null ? user.currency : 'USD'));
 
   const [error, setError] = useState('');
 
@@ -63,6 +63,13 @@ export default function ServicesPage() {
     return headers;
   };
 
+  // Sync currency from auth context (e.g. after saving in Account settings)
+  useEffect(() => {
+    if (user?.currency && CURRENCY_SYMBOLS[user.currency] != null) {
+      setUserCurrency(user.currency);
+    }
+  }, [user?.currency]);
+
   // Fetch user currency from account settings so Price uses correct symbol
   useEffect(() => {
     if (!accessToken) return;
@@ -73,7 +80,10 @@ export default function ServicesPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setUserCurrency(data.currency || 'USD');
+          const currency = data.currency || 'USD';
+          if (CURRENCY_SYMBOLS[currency] != null) {
+            setUserCurrency(currency);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch user currency:', err);

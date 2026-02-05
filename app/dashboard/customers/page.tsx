@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, Phone, Calendar, Search, Plus, ChevronLeft, ChevronRight, X, Clock, Trash2, Edit2, Loader2, Tag } from 'lucide-react';
+import { User, Phone, Calendar, Search, Plus, ChevronLeft, ChevronRight, X, Clock, Trash2, Edit2, Loader2 } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
 
 const API_BASE_URL =
@@ -434,7 +434,7 @@ export default function CustomersPage() {
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
                   <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span>{customer.phone}</span>
+                  <span>{customer.phone || 'No phone'}</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
                   <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
@@ -569,7 +569,7 @@ export default function CustomersPage() {
                         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{selectedCustomer.name}</h2>
                         <div className="flex items-center gap-2 mt-1">
                           <Phone className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-600 break-all">{selectedCustomer.phone}</span>
+                          <span className="text-sm text-gray-600 break-all">{selectedCustomer.phone || 'No phone'}</span>
                         </div>
                       </>
                     )}
@@ -644,64 +644,8 @@ export default function CustomersPage() {
                 </div>
               </div>
 
-              {/* Notes & Tags + Booking List */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                {/* Notes & Tags */}
-                <div className="md:col-span-1 space-y-4">
-                  <div className="p-3 sm:p-4 rounded-xl border border-gray-200 bg-gray-50">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">Notes</h3>
-                    {isEditing ? (
-                      <textarea
-                        value={editedNotes}
-                        onChange={(e) => setEditedNotes(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Internal notes about this customer (preferences, history, etc.)"
-                      />
-                    ) : (
-                      <p className="text-xs sm:text-sm text-gray-700 whitespace-pre-line min-h-[60px]">
-                        {selectedCustomer.notes?.trim()
-                          ? selectedCustomer.notes
-                          : 'No notes added yet.'}
-                      </p>
-                    )}
-                  </div>
-                  <div className="p-3 sm:p-4 rounded-xl border border-gray-200 bg-gray-50">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-purple-500" />
-                      Tags
-                    </h3>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedTags}
-                        onChange={(e) => setEditedTags(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Comma-separated tags (e.g. VIP, Hair, Laser)"
-                      />
-                    ) : selectedCustomer.tags?.trim() ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedCustomer.tags
-                          .split(',')
-                          .map((tag) => tag.trim())
-                          .filter(Boolean)
-                          .map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[10px] sm:text-xs font-medium"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-gray-500">No tags added yet.</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Booking History */}
-                <div className="md:col-span-2">
+              {/* Booking History */}
+              <div>
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                     Booking History ({selectedCustomer.bookings} bookings)
                   </h3>
@@ -826,30 +770,6 @@ export default function CustomersPage() {
                   placeholder="Enter phone number"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  value={newCustomerNotes}
-                  onChange={(e) => setNewCustomerNotes(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                  placeholder="Internal notes about this customer (preferences, history, etc.)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tags
-                </label>
-                <input
-                  type="text"
-                  value={newCustomerTags}
-                  onChange={(e) => setNewCustomerTags(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                  placeholder="Comma-separated tags (e.g. VIP, Hair, Laser)"
-                />
-              </div>
             </div>
 
             {/* Footer */}
@@ -859,8 +779,6 @@ export default function CustomersPage() {
                   setShowAddModal(false);
                   setNewCustomerName('');
                   setNewCustomerPhone('');
-                  setNewCustomerNotes('');
-                  setNewCustomerTags('');
                 }}
                 className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors text-sm font-medium"
               >
