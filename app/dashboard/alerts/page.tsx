@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Info, XCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, XCircle, ChevronLeft, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { authenticatedFetch } from '@/utils/api';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -28,6 +28,8 @@ export default function AlertsPage() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [markingRead, setMarkingRead] = useState<number | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const itemsPerPage = 10;
   const toast = useToast();
 
@@ -138,6 +140,28 @@ export default function AlertsPage() {
     }
   };
 
+  const handleClearAll = async () => {
+    setShowClearConfirm(false);
+    setClearingAll(true);
+    try {
+      const res = await authenticatedFetch(
+        `${API_BASE_URL}/api/v1/alerts/clear_all/`,
+        { method: 'POST' }
+      );
+
+      if (res.ok) {
+        await fetchAlerts();
+        toast.success('All alerts cleared');
+      } else {
+        toast.error('Failed to clear alerts');
+      }
+    } catch (err) {
+      toast.error('Failed to clear alerts');
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
   const unreadAlerts = alerts.filter((a) => !a.is_read);
   const totalPages = Math.max(1, Math.ceil(alerts.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -193,25 +217,46 @@ export default function AlertsPage() {
               Alerts
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-gray-600">
-              Stay informed about important events and updates
+              Stay informed about important events and updates. Alerts older than 7 days are removed automatically.
             </p>
           </div>
-          {unreadAlerts.length > 0 && (
-            <button
-              onClick={handleMarkAllAsRead}
-              disabled={markingAllRead}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] text-white font-semibold hover:opacity-90 transition-opacity text-sm sm:text-base shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {markingAllRead ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                  Marking...
-                </>
-              ) : (
-                `Mark all as read (${unreadAlerts.length})`
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {unreadAlerts.length > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                disabled={markingAllRead}
+                className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] text-white font-semibold hover:opacity-90 transition-opacity text-sm sm:text-base shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {markingAllRead ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                    Marking...
+                  </>
+                ) : (
+                  `Mark all as read (${unreadAlerts.length})`
+                )}
+              </button>
+            )}
+            {alerts.length > 0 && (
+              <button
+                onClick={() => setShowClearConfirm(true)}
+                disabled={clearingAll}
+                className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors text-sm sm:text-base shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {clearingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Clear all
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -342,6 +387,38 @@ export default function AlertsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Clear all confirmation */}
+      {showClearConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowClearConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Clear all alerts?</h3>
+            <p className="text-gray-600 text-sm mb-6">
+              This will permanently delete all your alerts. This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium text-sm"
+              >
+                Clear all
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

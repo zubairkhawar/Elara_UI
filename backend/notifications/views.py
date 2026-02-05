@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import timedelta
 
-from django.db.models import Q
 from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -17,29 +17,37 @@ from .stream import register_queue, unregister_queue
 
 logger = logging.getLogger(__name__)
 
+# Alerts older than this are excluded from the API (auto-removed from user's view)
+ALERT_RETENTION_DAYS = 7
+
 
 class AlertViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for managing alerts/notifications.
+    Alerts older than 7 days are excluded and can be purged via management command.
     """
     serializer_class = AlertSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """Return alerts for the current user."""
-        queryset = Alert.objects.filter(owner=self.request.user)
-        
+        """Return alerts for the current user (last 7 days only)."""
+        cutoff = timezone.now() - timedelta(days=ALERT_RETENTION_DAYS)
+        queryset = Alert.objects.filter(
+            owner=self.request.user,
+            created_at__gte=cutoff,
+        )
+
         # Filter by read/unread status
         is_read = self.request.query_params.get('is_read')
         if is_read is not None:
             is_read_bool = is_read.lower() == 'true'
             queryset = queryset.filter(is_read=is_read_bool)
-        
+
         # Filter by type
         alert_type = self.request.query_params.get('type')
         if alert_type:
             queryset = queryset.filter(type=alert_type)
-        
+
         return queryset.order_by('-created_at')
 
     @action(detail=True, methods=['post'])
@@ -68,12 +76,24 @@ class AlertViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def unread_count(self, request: Request) -> Response:
-        """Get count of unread alerts."""
+        """Get count of unread alerts (last 7 days)."""
+        cutoff = timezone.now() - timedelta(days=ALERT_RETENTION_DAYS)
         count = Alert.objects.filter(
             owner=request.user,
             is_read=False,
+            created_at__gte=cutoff,
         ).count()
         return Response({'count': count})
+
+    @action(detail=False, methods=['post'])
+    def clear_all(self, request: Request) -> Response:
+        """Delete all alerts for the current user (last 7 days scope)."""
+        cutoff = timezone.now() - timedelta(days=ALERT_RETENTION_DAYS)
+        deleted, _ = Alert.objects.filter(
+            owner=request.user,
+            created_at__gte=cutoff,
+        ).delete()
+        return Response({'deleted': deleted})
 
 
 def _get_user_from_token(access_token: str):
