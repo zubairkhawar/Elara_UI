@@ -303,8 +303,7 @@ export default function TopBar() {
                               )}
                             </div>
                           </div>
-                        ))
-                      )}
+                        )))}
                     </div>
                     <div className="p-3 border-t border-gray-200 text-center">
                       <button className="text-sm text-purple-600 hover:underline font-medium w-full">
@@ -367,8 +366,7 @@ export default function TopBar() {
                               )}
                             </div>
                           </div>
-                        ))
-                      )}
+                        )))}
                     </div>
                     <div className="p-3 border-t border-gray-200 text-center">
                       <button className="text-sm text-purple-600 hover:underline font-medium">
