@@ -175,8 +175,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(message);
     }
 
-    // Automatically log in after successful signup
-    await login(data.email, data.password);
+    // Do not log in: account is pending until admin activates it.
+    // Caller (signup page) will show success message and link to login for later.
   };
 
   const updateProfile = async (data: Partial<ProfileUpdateData>) => {

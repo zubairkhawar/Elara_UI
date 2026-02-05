@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Sparkles, Clock, Zap } from 'lucide-react';
 
 export default function About() {
@@ -99,8 +100,14 @@ export default function About() {
               <div className="space-y-8">
                 {/* Message 1 */}
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/20">
-                    <span className="text-white font-black">E</span>
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg shadow-purple-500/20 bg-gradient-to-br from-purple-500 to-indigo-600">
+                    <Image
+                      src="/Elara.png"
+                      alt="Elara AI"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-cover"
+                    />
                   </div>
                   <div className="bg-white/5 p-5 rounded-2xl rounded-tl-none border border-white/5">
                     <p className="text-white font-semibold text-sm mb-1">Elara AI</p>
@@ -122,8 +129,14 @@ export default function About() {
                 
                 {/* Message 3 */}
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-black">E</span>
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 shadow-lg shadow-purple-500/20 bg-gradient-to-br from-purple-500 to-indigo-600">
+                    <Image
+                      src="/Elara.png"
+                      alt="Elara AI"
+                      width={48}
+                      height={48}
+                      className="w-12 h-12 object-cover"
+                    />
                   </div>
                   <div className="bg-white/5 p-5 rounded-2xl rounded-tl-none border border-white/5">
                     <p className="text-white font-semibold text-sm mb-1">Elara AI</p>

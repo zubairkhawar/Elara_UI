@@ -118,6 +118,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     date_joined = models.DateTimeField(default=django_timezone.now)
 
+    # Whether the user signed up via the public form (self) or was created in admin (admin).
+    # Used to filter "pending" self-signups in admin.
+    SIGNUP_SOURCE_CHOICES = [
+        ("self", "Self signup"),
+        ("admin", "Created by admin"),
+    ]
+    signup_source = models.CharField(
+        max_length=16,
+        choices=SIGNUP_SOURCE_CHOICES,
+        default="admin",
+        help_text="Self signup = registered via the public signup page. Admin = created in Django admin.",
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"

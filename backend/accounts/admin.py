@@ -16,6 +16,7 @@ class CustomUserAdmin(BaseUserAdmin):
         "email",
         "name",
         "business_name",
+        "signup_source",
         "setup_status",
         "vapi_token_status",
         "vapi_phone_short",
@@ -23,7 +24,7 @@ class CustomUserAdmin(BaseUserAdmin):
         "last_login",
         "date_joined",
     ]
-    list_filter = ["is_active", "is_staff", "setup_status"]
+    list_filter = ["is_active", "is_staff", "signup_source", "setup_status"]
     search_fields = ["email", "name", "business_name", "vapi_assistant_id", "vapi_phone_number"]
     ordering = ["-date_joined"]
     list_editable = ["setup_status"]
@@ -40,6 +41,7 @@ class CustomUserAdmin(BaseUserAdmin):
                     "business_type",
                     "service_hours",
                     "custom_service_hours",
+                    "signup_source",
                 )
             },
         ),
@@ -126,3 +128,8 @@ class CustomUserAdmin(BaseUserAdmin):
     def mark_setup_live(self, request, queryset):
         n = queryset.update(setup_status="live")
         self.message_user(request, f"Marked {n} user(s) as Live.")
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.signup_source = "admin"
+        super().save_model(request, obj, form, change)

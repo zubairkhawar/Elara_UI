@@ -35,6 +35,7 @@ export default function SignupPage() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [signupComplete, setSignupComplete] = useState(false);
   const { signup, loginWithGoogle, loginWithApple } = useAuth();
   const toast = useToast();
 
@@ -107,7 +108,8 @@ export default function SignupPage() {
         serviceHours: serviceHours === 'Custom Service Hours' ? customServiceHours : serviceHours,
         customServiceHours: serviceHours === 'Custom Service Hours' ? customServiceHours : undefined,
       });
-      toast.success('Account created successfully. Welcome!');
+      setSignupComplete(true);
+      toast.success("We're setting up your agent. You'll get an email when everything is ready.");
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed. Please try again.';
       setError(message);
@@ -524,7 +526,7 @@ export default function SignupPage() {
           )}
 
           {/* Step 4: Confirmation */}
-          {step === 4 && (
+          {step === 4 && !signupComplete && (
             <div className="space-y-6">
               {error && (
                 <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-200" role="alert">
@@ -546,15 +548,11 @@ export default function SignupPage() {
                 <ul className="space-y-3 text-[var(--text-secondary)]">
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                    <span>You'll receive a confirmation email shortly</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
                     <span>Our team will configure your AI voice assistant</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                    <span>We'll notify you when everything is ready</span>
+                    <span>We'll email you when your account is ready—then you can log in with your password</span>
                   </li>
                 </ul>
               </div>
@@ -580,6 +578,46 @@ export default function SignupPage() {
                   </>
                 )}
               </button>
+            </div>
+          )}
+
+          {/* Post-signup: pending approval */}
+          {signupComplete && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
+                  <Check className="w-8 h-8 text-green-400" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">We're setting up your agent</h2>
+                <p className="text-[var(--text-secondary)]">
+                  You'll get an email when everything is ready. Then you can log in with the password you chose and start using the service.
+                </p>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-lg p-6 space-y-4">
+                <h3 className="text-lg font-semibold text-white">What happens next?</h3>
+                <ul className="space-y-3 text-[var(--text-secondary)]">
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                    <span>Our team will configure your AI voice assistant and Vapi</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                    <span>We'll email you when your account is live</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                    <span>Use the same email and password to log in once you receive the email</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/login"
+                className="block w-full py-3 rounded-lg text-center font-semibold border border-white/20 text-white hover:bg-white/10 transition-colors"
+              >
+                Go to login (for when your account is ready)
+              </Link>
             </div>
           )}
 
