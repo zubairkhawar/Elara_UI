@@ -274,36 +274,39 @@ export default function TopBar() {
                           No notifications yet.
                         </div>
                       ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                              notification.unread ? 'bg-gray-50' : ''
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center flex-shrink-0">
-                                <span className="text-white font-semibold text-xs">
-                                  {notification.title.charAt(0)}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm">
-                                  {notification.title}
-                                </p>
-                                <p className="text-gray-600 text-sm mt-1">
-                                  {notification.message}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                                  <span>{notification.time}</span>
+                        <>
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                                notification.unread ? 'bg-gray-50' : ''
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-semibold text-xs">
+                                    {notification.title.charAt(0)}
+                                  </span>
                                 </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm">
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-gray-600 text-sm mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                    <span>{notification.time}</span>
+                                  </div>
+                                </div>
+                                {notification.unread && (
+                                  <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 mt-2"></div>
+                                )}
                               </div>
-                              {notification.unread && (
-                                <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 mt-2"></div>
-                              )}
                             </div>
-                          </div>
-                        )))}
+                          ))}
+                        </>
+                      )}
                     </div>
                     <div className="p-3 border-t border-gray-200 text-center">
                       <button className="text-sm text-purple-600 hover:underline font-medium w-full">
@@ -331,42 +334,45 @@ export default function TopBar() {
                           No notifications yet.
                         </div>
                       ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                              notification.unread ? 'bg-gray-50' : ''
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center flex-shrink-0">
-                                <span className="text-white font-semibold text-xs">
-                                  {notification.title.charAt(0)}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-gray-900 text-sm">
-                                  {notification.title}
-                                </p>
-                                <p className="text-gray-600 text-sm mt-1">
-                                  {notification.message}
-                                </p>
-                                <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                                  <span>{notification.time}</span>
-                                  {notification.unread && (
-                                    <span className="inline-flex items-center gap-1 text-emerald-600">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                      New
-                                    </span>
-                                  )}
+                        <>
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                                notification.unread ? 'bg-gray-50' : ''
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1E1E5F] to-[#7B4FFF] flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white font-semibold text-xs">
+                                    {notification.title.charAt(0)}
+                                  </span>
                                 </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm">
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-gray-600 text-sm mt-1">
+                                    {notification.message}
+                                  </p>
+                                  <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                                    <span>{notification.time}</span>
+                                    {notification.unread && (
+                                      <span className="inline-flex items-center gap-1 text-emerald-600">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        New
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {notification.unread && (
+                                  <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 mt-2"></div>
+                                )}
                               </div>
-                              {notification.unread && (
-                                <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0 mt-2"></div>
-                              )}
                             </div>
-                          </div>
-                        )))}
+                          ))}
+                        </>
+                      )}
                     </div>
                     <div className="p-3 border-t border-gray-200 text-center">
                       <button className="text-sm text-purple-600 hover:underline font-medium">
